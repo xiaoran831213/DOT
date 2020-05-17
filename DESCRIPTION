@@ -1,0 +1,10 @@
+Package: DOT
+Title: DOT: Decorrelation by Orthogonal Transformation to summarize genetic association statistics
+Version: 0.1.0
+Authors@R: person("Xiaoran", "Tong", email = "tongxia1@msu.edu", role = c("aut", "cre"))
+Description: DOT decorrelate and summarize genetic association statistics (i.e., SNP Z-scores) into a single score, it bypasses the need of the original genotype as long as the variant correlation is given. Under the null hypothesis of no genetic effect, the combined score provides superior power than Bonferroni/FDR correction and mixture of chi-square test.
+Depends: R (>= 3.1)
+License: GPL (>= 2)
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.0
