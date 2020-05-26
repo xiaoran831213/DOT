@@ -37,3 +37,9 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+# simulations on HPCC
+sim/*
+
+# emacs backup
+*~

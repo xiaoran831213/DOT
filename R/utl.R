@@ -1,38 +1,43 @@
 #' Create data frame
 #'
-#' A simplified  wrapper of R  data.frame(...), which also ensure  the character
-#' variables are not turned into factors.
+#' A wrapper  for R \code{data.frame},  which ensures that string  variables not
+#' turn into factors.
 .d <- function(...) data.frame(..., stringsAsFactors=FALSE)
 
-#' Flood named objects in a container to an environment
+#' Flood objects in a container to an environment
 #'
-#' \code{flood} quickly assign items in a list to the calling environment,
+#' \code{flood} assign named  items in a list to the  calling environment, thus,
+#' syntax like:
 #'
-#' So syntax like:
-#'   a <- result$a
-#'   b <- result$b
-#'   ...
-#'   z <- result$z
+#' a <-  result$a
+#' b <-  result$b
+#' ...
+#' z  <- result$z
 #'
-#' becomes: \code{flood(result)}
+#' is simplified to:
+#'
+#' \code{flood(result)}
 #'
 #' Be careful with the silent overwriting of existing object.
-flood <- function(., x=parent.frame())
+#'
+#' @param x a container with named objects, typically a R-list
+#' @param e environment to flood the objects, default to the calling environment
+flood <- function(x, e=parent.frame())
 {
-    for(n in names(.)) assign(n, .[[n]], x)
+    for(n in names(x)) assign(n, x[[n]], e)
     invisible(NULL)
 }
 
-#' get function calling arguments
+#' Collect function calling arguments
 #'
-#' Use \code{get.arg} in a function's body body to capture the calling arguments
-#' in a  one-row \code{data.frame}. The  get.arg() is useful in  documenting the
-#' simulation configuration which is usually passed in as arguments, such as the
-#' desired sample size, the number of variables (i.e., SNPs), the size of noise,
-#' etc.
+#' Put \code{get.arg} inside a function's  body to capture the calling arguments
+#' in a single  row \code{data.frame}.  The \code{get.arg} utility  is useful in
+#' documenting  the  simulation  configurations  which  usually  are  passed  as
+#' function calling arguments, such as the  sample size, the number of variants,
+#' the size of noise or heritability, etc.
 #'
 #' \code{get.arg}  is   not  recommended  for  functions   accepting  non-scalar
-#' arguments such as matrix of genotype or vector of effects.
+#' arguments such as genotype matrix or vector of effects.
 #'
 #' @return a data.frame of function arguments 
 get.arg <- function()

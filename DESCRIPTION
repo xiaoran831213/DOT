@@ -1,8 +1,8 @@
-Package: DOT
-Title: DOT: Decorrelation by Orthogonal Transformation to summarize genetic association statistics
+Package: dotgen
+Title: dotgen: summarize genetic association test statistics via Decorrelation by Orthogonal Transformation (DOT).
 Version: 0.1.0
 Authors@R: person("Xiaoran", "Tong", email = "tongxia1@msu.edu", role = c("aut", "cre"))
-Description: DOT decorrelate and summarize genetic association statistics (i.e., SNP Z-scores) into a single score, it bypasses the need of the original genotype as long as the variant correlation is given. Under the null hypothesis of no genetic effect, the combined score provides superior power than Bonferroni/FDR correction and mixture of chi-square test.
+Description: the function dot() decorrelate and summarize genetic association statistics into a single chi-square statistics, thus bypassing the need of original genotype given the variant correlation. The combined chi-square provides superior power than the original stistics after Bonferroni/FDR correction.
 Depends: R (>= 3.1)
 License: GPL (>= 2)
 Encoding: UTF-8
