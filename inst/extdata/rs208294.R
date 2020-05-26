@@ -1,5 +1,3 @@
-source("ini.R")
-
 sim <- function()
 {
     ## fetch data (already aligned by ID)
