@@ -47,6 +47,9 @@ get.arg <- function()
     {
         switch(class(.), call=deparse(.), name=as.character(.), .)
     })
+
+    ## drop NULL(s) and return
+    a <- a[!sapply(a, is.null)]
     do.call(data.frame, c(a, list(stringsAsFactors=FALSE)))
 }
 
