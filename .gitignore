@@ -41,5 +41,8 @@ vignettes/*.pdf
 # simulations on HPCC
 sim/*
 
+# R package manual genrated by devtools
+man/*
+
 # emacs backup
 *~
