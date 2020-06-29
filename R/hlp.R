@@ -1,43 +1,3 @@
-#' Multivariate Normal Samples
-#'
-#' A simplified copy of \code{MASS::mvrnorm()}.
-#'
-#' @param N number of samples to be drawn
-#' @param  M vector  of mean,  to be rotated  to the  length of  sample features
-#'     \code{D}
-#' @param V square matrix of covariance, with \code{D} dimensions
-#' @param drop TRUE to drop matrix of single sample to vector
-#' 
-#' @return matrix of N row samples and D column features, whose
-#' covariance is \code{V}
-mvn <- function (N=1, M=0, V=NULL, drop=TRUE)
-{
-    ## default V is for demonstration
-    if(is.null(V))
-        V = rbind(c(1, .5, .25), c(.5, 1, .5), c(.25, .5, 1))
-
-    ## dimensionality
-    D <- nrow(V)
-
-    ## mean vector
-    M <- drop(rep(M, length=D))
-
-    ## eigen decomposition
-    e <- eigen(V, symmetric = TRUE)
-    d <- e$values
-    U <- e$vectors
-    s <- sqrt(pmax(d, 0))          # square root of V
-
-    ## random values
-    X <- matrix(rnorm(D * N), D, N)
-    y <- t(M + U %*% (s * X))
-
-    if(drop)
-        y <- drop(y)
-    y
-}
-
-
 #' Schur complement
 #'
 #' Given a full matrix \code{X} and a target block \code{C} within,
@@ -143,7 +103,7 @@ imp <- function(g)
 {
     P <- ncol(g)
     N <- nrow(g)
-
+    
     ## NA mask, and pairwise completion count
     Z <- is.na(g)
     C <- N - crossprod(Z)
@@ -168,13 +128,13 @@ imp <- function(g)
     diag(B) <- 0
     x <- x %*% B / (P - 1)
     x <- sweep(x, 2, a, `+`)
-
+    
     ## break imputed values into descrete dosage
     h <- matrix(0L, nrow(x), ncol(x))
     for(j in seq(ncol(g)))
     {
-        h[x[, j] > max(x[g[, j] == 0, j], na.rm=TRUE), j] <- 1L
-        h[x[, j] > max(x[g[, j] == 1, j], na.rm=TRUE), j] <- 2L
+        h[x[, j] > max(x[g[, j] == 0, j], -Inf, na.rm=TRUE), j] <- 1L
+        h[x[, j] > max(x[g[, j] == 1, j], -Inf, na.rm=TRUE), j] <- 2L
     }
     g[Z] <- h[Z]
     g
