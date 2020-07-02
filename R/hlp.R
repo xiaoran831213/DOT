@@ -2,17 +2,18 @@
 #'
 #' Given a full matrix \code{X} and a target block \code{C} within,
 #' 
-#' X   = [A  B]
-#'       [B' C],
+#' X = [A  B]
+#'     [B' C],
 #'
-#' \code{scp} calculate the Schur complement \eqn{X/C = A - BC^{-1}B'}
+#' calculate the Schur complement \eqn{X/C = A - BC^{-1}B'}
 #' 
 #' @param X the whole matrix
 #' @param C mask or index of the target block
 #' @return the Schur complement of block C of matrix X
+#' @noRd
 scp <- function(X, C)
 {
-    ## C can be names, numbers, or bollean masks, turn them into index
+    ## C can be names, numbers, or Boolean masks, turn them into index
     i <- seq(ncol(X))
     names(i) <- colnames(X)
     i <- unname(i[C])
@@ -29,14 +30,15 @@ scp <- function(X, C)
 
 #' Negative square root of positive definite matrix
 #'
-#' Given a poitive  (simi) definite (PSE) matrix \code{X},  \code{nsp} gives the
-#' negative squre root of \code{X}, that is, \eqn{(R R')^{-1} = X}.
+#' Given a positive  semi-definite (PSD) matrix \code{X},  \code{nsp} gives the
+#' negative square root of \code{X}, that is, \eqn{(R R')^{-1} = X}.
 #'
 #' For  matrix \code{X}  that  is  not PSD,  \code{nsp}  truncates \code{X}  and
 #' operates on the PSD part of \code{X}.
 #' 
 #' @param X supposedly positive definite matrix
 #' @return negative square root of \code{X}
+#' @noRd
 nsp <- function(X)
 {
     eps <- sqrt(.Machine$double.eps)
@@ -60,34 +62,6 @@ nsp <- function(X)
 }
 
 
-#' LD-correlation of genotype variants
-#'
-#' variant correlation based on Linkage  Disequilibrium (LD).
-#' 
-#' Given  two genetic  variants \eqn{x_i}  and \eqn{x_j},  the allele  frequency
-#' \eqn{p_i}  and \eqn{p_j},  and  the haplotype  frequency \eqn{p_{ij}},  their
-#' LD-correlation is
-#'
-#' \deqn{r_{ij} = \frac{p_{ij} - p_i p_j}{\sqrt{p_i(1 - p_i)p_j(1 - p_j)}}}
-#'
-#' \code{ldc} is related to Linkage  Disequilibrium (LD), that is, the numerator
-#' \eqn{p_{ij} - p_i  p_j} is the LD between variant  \code{i} and \code{j}. The
-#' LD-correlation is different from the typical 
-#'
-#' @param x genotype matrix of N row samples and M column variants.
-#' @export
-ldc <- function(x)
-{
-    PA_ <- colMeans(x) / 2
-    P_B <- PA_
-    PAB <- (crossprod(x > 0) + crossprod(x > 1)) / (2 * nrow(x))
-    DAB <- PAB - outer(PA_, P_B) # LD
-    VA_ <- PA_ * (1 - PA_)       # VA
-    V_B <- P_B * (1 - P_B)       # VB
-    DAB / sqrt(outer(VA_, V_B))  # cor(AB)
-}
-
-
 #' Impute missing genotype calls
 #'
 #' Fill missing values considering the correlated variants
@@ -96,9 +70,9 @@ ldc <- function(x)
 #' rest of  \code{M - 1} variants,  and taking the average  prediction of missed
 #' calls from \code{M - 1} linear models.
 #'
-#' @param g genotype matrix in allele dosage formate
+#' @param g genotype matrix in allele dosage format
 #' @return the same matrix with imputed dosage values
-#' @export
+#' @noRd
 imp <- function(g)
 {
     P <- ncol(g)
@@ -118,8 +92,8 @@ imp <- function(g)
     ## d_ij resembles a distance measure.
     D <- crossprod(x) * (N / C)
 
-    ## simple regression, use x_i to preduct x_j
-    ## hat{x_j}(x_i) = b_ij x_i, needs regresion coeficient b_ij
+    ## simple regression, use x_i to product x_j
+    ## hat{x_j}(x_i) = b_ij x_i, needs regression coefficient b_ij
     ## b_ij = (x_i' x_j) / (x_i' x_i) = d_ij / d_ii, i,j = 1 ... P
     B <- D / diag(D)
     
@@ -129,7 +103,7 @@ imp <- function(g)
     x <- x %*% B / (P - 1)
     x <- sweep(x, 2, a, `+`)
     
-    ## break imputed values into descrete dosage
+    ## break imputed values into discrete dosage
     h <- matrix(0L, nrow(x), ncol(x))
     for(j in seq(ncol(g)))
     {
@@ -141,41 +115,35 @@ imp <- function(g)
 }
 
 
-#' Conditional variant correlation
+#' Correlation of association statistics
 #'
-#' calculate the correlation between  genotype variants (\code{g}) conditioned on
-#' covariates (\code{x}).
+#' Calculate the correlation among genetic association test statistics
 #'
-#' With no covariate (\code{x=NULL}),  the conditioned variant correlation (cvc)
-#' is identical  to the raw  variant correlation \code{cor(g)};  with covariate,
-#' the conditional
+#' When no  covariate was present  in the association  analysis (\code{x=NULL}),
+#' correlation among the  test statistics equals the genotype  LD or correlation
+#' \code{cor(g)}.
+#'
+#' With covariates, \code{css()} gives Schur complement of the genotype block in
+#' cor(cbind(g, x)) -- the correlation among all predictors.
+#'
+#' @param g matrix of genotype, one row per sample, one column per variant;
+#' @param x matrix of covariates, one row per sample, one column per variable.
 #'
 #' @examples
 #' ## get genotype and covariate matrices
 #' gno <- readRDS(system.file("extdata", 'rs208294_gno.rds', package="dotgen"))
 #' cvr <- readRDS(system.file("extdata", 'rs208294_cvr.rds', package="dotgen"))
 #'
-#' ## conditional variate correlation
-#' sgm <- cvc(gno, cvr)
-#'
-#' ## result of per-variant test (p-values and effects)
-#' res <- readRDS(system.file("extdata", 'rs208294_res.rds', package="dotgen"))
-#'
-#' ## recover z-score statistics
-#' stt <- with(res, zsc(P, BETA))
-#'
-#' ## DOT  summarized chi-square  statistics based  on z-scores  and conditional
-#' ## variant correlation
-#' rpt <- dot(stt, sgm)
-#'
-#' print(rpt$ssq)  # chi-square = 35.76306
-#' print(rpt$pvl)  #    p-value =  0.001132132
-cvc <- function(g, x=NULL)
+#' ## correlation among association statistics, covariates involved
+#' sgm <- css(gno, cvr)
+#' print(sgm[1:4, 1:4])
+#' @export
+css <- function(g, x=NULL)
 {
     g <- imp(g) # impute missed calls
     
     if(is.null(x))
-        r <- cor(g) # no covariate, cond cor = full cor
+        r <- cor(g) # no covariate, use full cor
     else
     {
         r <- cor(cbind(x, g))   # full cor

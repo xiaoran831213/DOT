@@ -2,6 +2,7 @@
 #'
 #' A wrapper  for R \code{data.frame},  which ensures that string  variables not
 #' turn into factors.
+#' @noRd
 .d <- function(...) data.frame(..., stringsAsFactors=FALSE)
 
 #' Flood objects in a container to an environment
@@ -22,6 +23,7 @@
 #'
 #' @param x a container with named objects, typically a R-list
 #' @param e environment to flood the objects, default to the calling environment
+#' @noRd
 flood <- function(x, e=parent.frame())
 {
     for(n in names(x)) assign(n, x[[n]], e)
@@ -39,7 +41,8 @@ flood <- function(x, e=parent.frame())
 #' \code{get.arg}  is   not  recommended  for  functions   accepting  non-scalar
 #' arguments such as genotype matrix or vector of effects.
 #'
-#' @return a data.frame of function arguments 
+#' @return a data.frame of function arguments
+#' @noRd
 get.arg <- function()
 {
     a <- as.list(match.call(sys.function(1), sys.call(1), expand.dots=TRUE))
