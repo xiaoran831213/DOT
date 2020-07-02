@@ -55,4 +55,3 @@ get.arg <- function()
     a <- a[!sapply(a, is.null)]
     do.call(data.frame, c(a, list(stringsAsFactors=FALSE)))
 }
-

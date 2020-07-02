@@ -1,8 +1,8 @@
 Package: dotgen
-Title: dotgen: Decorrelation by Orthogonal Tranformation (DOT) on genetic association test statistics
+Title: dotgen: Decorrelation by Orthogonal Transformation (DOT) on genetic association test statistics
 Version: 0.1.0
 Authors@R: person("Xiaoran", "Tong", email = "tongxia1@msu.edu", role = c("aut", "cre"))
-Description: the package provides functions to decorrelate a set of genetic association test statistics (i.e., Z-score of each SNP) via Decoorelation by Orthogonal Transformation (DOT). One could then perform a gene-set analysis by combining decorrelated statistic values; the DOT operates on the association anlysis results and the LD matrix of the genotype variant, without the need of orignal, actual genotype and phenotype data.
+Description: the package provides functions to decorrelate a set of genetic association test statistics (i.e., Z-score of SNP(s) in a gene) via De-correlation by Orthogonal Transformation (DOT). One could jointly analyze the genetic effect of all variants involved by combining the decorrelated statistics; since the DOT only relies on the original association test statistics and the LD of the genotype variants, it bypasses the logistical issue of accessing genotype and phenotype.
 Depends: R (>= 3.1)
 License: GPL (>= 2)
 Encoding: UTF-8

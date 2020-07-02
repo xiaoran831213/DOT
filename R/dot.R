@@ -131,7 +131,6 @@ dot <- function(Z, C=NULL, ...)
 #' @export
 zsc <- function(P, BETA)
 {
-    qnorm(P / 2) * -(sign(BETA))
+    stats::qnorm(P / 2) * -(sign(BETA))
 }
 
-##  LocalWords:  decorrelate

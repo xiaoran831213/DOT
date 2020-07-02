@@ -143,12 +143,12 @@ css <- function(g, x=NULL)
     g <- imp(g) # impute missed calls
     
     if(is.null(x))
-        r <- cor(g) # no covariate, use full cor
+        r <- stats::cor(g)              # no covariate, use full cor
     else
     {
-        r <- cor(cbind(x, g))   # full cor
-        i <- seq(ncol(x))       # index of covariates
-        r <- cov2cor(scp(r, i)) # cond cor
+        r <- stats::cor(cbind(x, g))    # full cor
+        i <- seq(ncol(x))               # index of covariates
+        r <- stats::cov2cor(scp(r, i))  # cond cor
     }
     r
 }
