@@ -28,7 +28,7 @@ scp <- function(X, C)
 }
 
 
-#' Negative square root of positive definite matrix
+#' Negative square root of a positive definite matrix
 #'
 #' Given a positive  semi-definite (PSD) matrix \code{X},  \code{nsp} gives the
 #' negative square root of \code{X}, that is, \eqn{(R R')^{-1} = X}.
@@ -117,18 +117,17 @@ imp <- function(g)
 
 #' Correlation of association statistics
 #'
-#' Calculate the correlation among genetic association test statistics
+#' Estimate the correlation among genetic association test statistics
 #'
-#' When no  covariate was present  in the association  analysis (\code{x=NULL}),
-#' correlation among the  test statistics equals the genotype  LD or correlation
-#' \code{cor(g)}.
+#' When no covariate  was present in the original  genetic association analysis,
+#' that is, \code{x==NULL},  correlation among the test  statistics is estimated
+#' by correlation among the variants \code{cor(g)}.
 #'
 #' With covariates, \code{css()} gives Schur complement of the genotype block in
-#' cor(cbind(g, x)) -- the correlation among all predictors.
+#' the full correlation of all predictors \code{cor(cbind(g, x))}.
 #'
 #' @param g matrix of genotype, one row per sample, one column per variant;
-#' @param x matrix of covariates, one row per sample, one column per variable.
-#'
+#' @param x matrix of covariates, one row per sample.
 #' @examples
 #' ## get genotype and covariate matrices
 #' gno <- readRDS(system.file("extdata", 'rs208294_gno.rds', package="dotgen"))

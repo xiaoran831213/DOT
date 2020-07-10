@@ -1,12 +1,49 @@
 # DOT
 Decorrelation by Orthogonal Transformation (DOT) on genetic association test statistics.
 
-# Introduction
-The DOT package provides functions to decorrelate a set of genetic association test statistics (i.e., Z-score of SNP(s) in a gene) via De-correlation by Orthogonal Transformation (DOT). One could jointly analyze the genetic effect of all variants involved by combining the decorrelated statistics; since the DOT only relies on the original association test statistics and the LD of the genotype variants, it bypasses the logistical issue of accessing genotype and phenotype.
+# Overview
+DOT  means  Decorrelation  by  Orthogonal Transformation  (DOT).   The  package
+provides function to  decorrelate genetic association test  statistics.  One can
+treat the output as independent normal variables.  Because DOT only requires the
+association test  statistics and  their estimated  correlation, it  bypasses the
+logistical issue of accessing genotype and phenotype.
+
+See  published  work  "[DOT:  Gene-set  analysis  by  combining  decorre-  lated
+association statis- tics](dot)" for more details.
+
+[dot]:https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1007819&rev=2
 
 # Usage
-An user inputs a GWAS report (e.g., p-values and beta coefficients) of M genetic variants of interest, and an estimated LD (linkage disequilibrium) between these M variants (a MxM correlation matrix), the package produces DOT summary statistics as the sum of M re-weighted test statistics, and a single p-value for H0: none of the M variants is effective.
 
-# Examples
+Users inputs  a series  of genetic  association test  statistics of  M variants,
+usually the p-values and estimated effects  taken from a GWAS, and the estimated
+LD (linkage disequilibrium) among the variants, the package outputs docorrelated
+statistics which can combine into a joint statistics to test the overall genetic
+effect hypothesis (H_0: none of the M variants is effective).
 
-(TODO)
+Here is an example,
+```{r}
+library(dotgen)
+gno <- readRDS(system.file("extdata", 'rs208294_gno.rds', package="dotgen"))
+cvr <- readRDS(system.file("extdata", 'rs208294_cvr.rds', package="dotgen"))
+
+## estimate the correlation among association test statistics
+sgm <- css(gno, cvr)
+
+## get the result of genetic association analysis (p-values and effects)
+res <- readRDS(system.file("extdata", 'rs208294_res.rds', package="dotgen"))
+
+## recover association test statistics (z-scores)
+stt <- with(res, zsc(P, BETA))
+
+## decorrelate z-scores by DOT
+rpt <- dot(stt, sgm)
+print(rpt$X)                            # decorrelated statistics
+print(rpt$W)                            # orthogonal transformation
+
+## sum of squares of decorrelated statistics is a chi-square
+ssq <- sum(rpt$X^2)
+pvl <- 1 - pchisq(ssq, df=length(stt))
+print(ssq)                              # sum of square = 35.76306
+print(pvl)                              # chisq p-value =  0.001132132
+```
