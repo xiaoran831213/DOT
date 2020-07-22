@@ -2,7 +2,7 @@ Package: dotgen
 Title: Decorrelation by Orthogonal Transformation (DOT) on Genetic Association Test Statistics
 Version: 0.1.0
 Date: 2020-07-11
-Description: Decorrelated genetic association test statistics to allow easy treatment of independent statistics. 'DOT' use existing test statistics and their correlations, thus bypassing the need for the original genotype and phenotype. For more details on 'DOT' and its power, see "DOT: Gene-set  analysis by  combining decorrelated association statistics" <https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1007819>.
+Description: Decorrelated genetic association test statistics to allow easy treatment of independent statistics. DOT use existing test statistics and their correlations, thus bypassing the need for the original genotype and phenotype. For more details on DOT and its power, see ''DOT: Gene-set  analysis by  combining decorrelated association statistics'' <https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1007819>.
 Authors@R: c(
   person("Olga", "Vsevolozhskaya", email = "ovs222@@g.uky.edu", role = "aut",
          comment = c(ORCID = "0000-0001-9376-3645")),
@@ -20,4 +20,4 @@ Author:
   Xiaoran Tong [aut, cre] (<https://orcid.org/0000-0002-4648-3330>)
 Maintainer: Xiaoran Tong <tongxia1@msu.edu>
 LazyData: true
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1

@@ -64,8 +64,9 @@ nsp <- function(X)
 
 #' Impute missing genotype calls
 #'
-#' Fill missing values considering the correlated variants
+#' \code{imp} fills missing values considering the correlation among variants
 #'
+#' @details
 #' The imputation can be seen as regressing  each of the \code{M} variant on the
 #' rest of  \code{M - 1} variants,  and taking the average  prediction of missed
 #' calls from \code{M - 1} linear models.
@@ -115,16 +116,18 @@ imp <- function(g)
 }
 
 
-#' Correlation of association statistics
+#' Correlation among association statistics
 #'
-#' Estimate the correlation among genetic association test statistics
+#' \code{\link{cst}} calculates  the correlation among genetic  association test
+#' statistics
 #'
-#' When no covariate  was present in the original  genetic association analysis,
-#' that is, \code{x==NULL},  correlation among the test  statistics is estimated
-#' by correlation among the variants \code{cor(g)}.
+#' @details
+#' When no covariates were present in the original genetic association analysis,
+#' that is, \code{x==NULL}, correlation among the test statistics is the same as
+#' correlation among the variants \code{cor(g)}.
 #'
-#' With covariates, \code{css()} gives Schur complement of the genotype block in
-#' the full correlation of all predictors \code{cor(cbind(g, x))}.
+#' With  covariates, \code{\link{cst}}  gives Schur  complement of  the genotype
+#' block in the full correlation of all predictors \code{cor(cbind(g, x))}.
 #'
 #' @param g matrix of genotype, one row per sample, one column per variant;
 #' @param x matrix of covariates, one row per sample.
@@ -134,10 +137,10 @@ imp <- function(g)
 #' cvr <- readRDS(system.file("extdata", 'rs208294_cvr.rds', package="dotgen"))
 #'
 #' ## correlation among association statistics, covariates involved
-#' sgm <- css(gno, cvr)
+#' sgm <- cst(gno, cvr)
 #' print(sgm[1:4, 1:4])
 #' @export
-css <- function(g, x=NULL)
+cst <- function(g, x=NULL)
 {
     g <- imp(g) # impute missed calls
     
