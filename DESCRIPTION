@@ -1,8 +1,8 @@
 Package: dotgen
-Title: Decorrelation by Orthogonal Transformation (DOT) on Genetic Association Test Statistics
+Title: Combining genetic association statistics for a gene-set analysis via Decorrelation by Orthogonal Transformation (DOT)
 Version: 0.1.0
 Date: 2020-07-11
-Description: Decorrelated genetic association test statistics to allow easy treatment of independent statistics. DOT use existing test statistics and their correlations, thus bypassing the need for the original genotype and phenotype. For more details on DOT and its power, see ''DOT: Gene-set  analysis by  combining decorrelated association statistics'' <https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1007819>.
+Description: Decorrelates a set of summary statistics (i.e., Z-scores or P-values per SNP) via Deccorelation by Orthogonal Transformation (DOT) approach and performs gene-set analyses by combining transformed statistic values; operations are performed with algorithms that rely only on the association summary results and the LD. For more details on DOT and its power, see ''DOT: Gene-set  analysis by  combining decorrelated association statistics'' <https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1007819>.
 Authors@R: c(
   person("Olga", "Vsevolozhskaya", email = "ovs222@@g.uky.edu", role = "aut",
          comment = c(ORCID = "0000-0001-9376-3645")),
