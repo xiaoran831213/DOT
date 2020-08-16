@@ -126,8 +126,10 @@ imp <- function(g)
 #' that is, \code{x==NULL}, correlation among the test statistics is the same as
 #' correlation among the variants \code{cor(g)}.
 #'
-#' With  covariates, \code{\link{cst}}  gives Schur  complement of  the genotype
-#' block in the full correlation of all predictors \code{cor(cbind(g, x))}.
+#' With covariates,  the correlation among  test statistics  is not the  same as
+#' \code{cor(g)}. In this case,  \code{\link{cst}} takes the generalized inverse
+#' of the entire correlation matrix,  \code{corr(cbind(g, x))}, and then inverts
+#' back only the submtarix containing genotype variables, \code{g}.
 #'
 #' @param g matrix of genotype, one row per sample, one column per variant;
 #' @param x matrix of covariates, one row per sample.
