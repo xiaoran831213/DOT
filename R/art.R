@@ -66,7 +66,7 @@ test <- function()
     P.rtp <- RTP(sum(-log(P[1:k])), k, L)
     P.art <- ART(sum(log(P[1:(k-1)])), P[k], k, L)
     cat(P.art, P.rtp, "\n")
-    ## P.arta <- ART.A(P, k, L)
+    P.arta <- ART.A(P, k, L)
     ## cat(P.art, P.rtp, P.arta[1], P.arta[2], "\n")
 }
 
