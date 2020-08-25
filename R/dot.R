@@ -20,8 +20,10 @@
 #' For details about DOT, see the reference below.
 #'
 #' @references
-#' \href{https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1007819}{DOT:
-#' Gene-set analysis by combining decorrelated association statistics}
+#' \href{https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1007819}{
+#' Vsevolozhskaya, O. A., Shi, M., Hu, F., & Zaykin, D. V. (2020). DOT: Gene-set
+#' analysis by combining decorrelated association statistics. PLOS Computational
+#' Biology, 16(4), e1007819.}
 #'
 #' @param Z vector of association test statistics (i.e., Z-scores)
 #' @param C matrix of correlation among the association test statistics, as
@@ -29,12 +31,11 @@
 #' @param ... additional parameters
 #'
 #' @return
-#' a  list containing  the association  statistics \strong{Z},  its decorrelated
-#' counterpart  \code{\strong{X}},  and  the  orthogonal  transformation  matrix
-#' \strong{W}, where \strong{X} = \strong{WZ}.
+#' a  list  containing the  association  statistics  \code{Z}, its  decorrelated
+#' counterpart  \code{X}, and  the  orthogonal  transformation matrix  \code{W},
+#' where \code{X == WZ}.
 #' 
-#' @seealso \code{\link{cst}}, \code{\link{zsc}}
-#' @seealso \code{\link{dot_chisq}}, \code{\link{dot_art}}, \code{\link{dot_rtp}}
+#' @seealso \code{\link{cst}}, \code{\link{zsc}}, \code{\link{dot_sst}}
 #' @examples
 #' ## get genotype and covariate matrices
 #' gno <- readRDS(system.file("extdata", 'rs208294_gno.rds', package="dotgen"))

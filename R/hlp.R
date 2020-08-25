@@ -64,54 +64,94 @@ nsp <- function(X)
 
 #' Impute missing genotype calls
 #'
-#' \code{imp} fills missing values considering the correlation among variants
+#' Soft guess of missing values considering the correlation among variants
 #'
 #' @details
-#' The imputation can be seen as regressing  each of the \code{M} variant on the
-#' rest of  \code{M - 1} variants,  and taking the average  prediction of missed
-#' calls from \code{M - 1} linear models.
+#' The imputation can be seen as predicting  each of the \code{M} variant by the
+#' rest \code{M  - 1} variants,  and taking  the weighted average  prediction of
+#' missed calls.
 #'
 #' @param g genotype matrix in allele dosage format
 #' @return the same matrix with imputed dosage values
 #' @noRd
 imp <- function(g)
 {
-    P <- ncol(g)
-    N <- nrow(g)
-    
-    ## NA mask, and pairwise completion count
-    Z <- is.na(g)
-    C <- N - crossprod(Z)
-    a <- colMeans(g, na.rm=TRUE)
-    
-    ## center and scale X_j, for j = 1 ... P (the SNPs)
-    x <- sweep(g, 2, a, `-`)
-    x[Z] <- 0
-    
-    ## d_ij =  x_i' x_j *  (n_ij / c_ij),  where n_ij =  N, and c_ij  counts the
-    ## complete pairs;
-    ## d_ij resembles a distance measure.
-    D <- crossprod(x) * (N / C)
+    N <- nrow(g); M <- ncol(g); Z <- is.na(g); C <- !Z
 
-    ## simple regression, use x_i to product x_j
-    ## hat{x_j}(x_i) = b_ij x_i, needs regression coefficient b_ij
-    ## b_ij = (x_i' x_j) / (x_i' x_i) = d_ij / d_ii, i,j = 1 ... P
-    B <- D / diag(D)
-    
-    ## for a sample h, the ith SNP
-    ## h_i = sum_{j=1, j!=i} x_j b_ji / (non-na x_j count)
-    diag(B) <- 0
-    x <- x %*% B / (P - 1)
-    x <- sweep(x, 2, a, `+`)
-    
-    ## break imputed values into discrete dosage
-    h <- matrix(0L, nrow(x), ncol(x))
-    for(j in seq(ncol(g)))
+    .zs <- function(g)
     {
-        h[x[, j] > max(x[g[, j] == 0, j], -Inf, na.rm=TRUE), j] <- 1L
-        h[x[, j] > max(x[g[, j] == 1, j], -Inf, na.rm=TRUE), j] <- 2L
+        ## column center; setting NA to 0 after opt out incomplete pairs.
+        x <- as.matrix(scale(g, TRUE, FALSE))
+        x[Z] <- 0
+
+        ## sum_i(x_ir * x_is * i_rs), sum of product between of x_r and x_s,
+        ## complete pairs only
+        xy <- crossprod(x)
+
+        ## sum_i(x_ir * x_ir * i_rs), sum of square of x_r in the complete
+        ## pairs of x_r and x_s
+        xx <- crossprod(x^2, C)
+        
+        ## sum_i(x_ir * x_is * i_rs) / sum_i(x_ir  * x_ir * i_rs) = xy / xx_rs,
+        ## the regression coeficient
+        rc <- xy / xx
+
+        ## sum_i(x_ir * i_rs) / sum_i(i_rs), mean  of x_r in the complete pairs
+        ## of x_r and x_s
+        rs <- crossprod(x, C) # the sum
+        nn <- crossprod(C)    # the non-NA count
+        mu <- rs / nn         # the mean
+
+        ## sum_i(x_is * x_is * i_rs) - 2 * rc sum_i(x_ir * x_is * i_rs) + rc^2 *
+        ## sum_i(x_ir * x_ir * i_rs), squared residual
+        e2 <- t(xx) - xy * xy / xx
+
+        ## denominator
+        d2 <- xx - 2 * rs * mu + mu^2
+        
+        ## squared standard error
+        s2 <- e2 / d2 / (nn - 2)
+        diag(s2) <- (N - diag(nn)) / ((diag(nn) - 2) * (diag(nn) - 1))
+        ## z-scores
+        s2[s2 <= 0 ] <- min(s2[s2 > 0]) # avoid s2=0 caused by perfect fit
+        rc / sqrt(s2)
     }
-    g[Z] <- h[Z]
+    
+    p <- g
+    x <- array(c(g == 0 & C, g == 1 & C, g == 2 & C), c(N, M, 3)) * 1
+    
+    ## g <- imp.mod(g)
+    c_0 <- Inf # consistancy
+    w <- 1
+
+    ## complete pairs, for each genotype {0, 1, 2}
+    n <- array(apply(x, 3, crossprod, C), c(M, M, 3))
+
+    ## weights
+    w <- .zs(p)^2
+    w <- w / mean(diag(w))
+
+    ## transition
+    y <- array(0, c(N, M, 3))
+    for(i in 1:3)
+    {
+        n_i <- crossprod(x[, , i], C) # pairwise complete count for x == 0, 1, or 2
+        r_i <- 1/ n_i
+        r_i[is.infinite(r_i)] <- 0
+        for(j in 1:3)
+        {
+            y[, , j] <- y[, , j] + x[, , i] %*% (w * crossprod(x[, , i], x[, , j]) * r_i)
+        }
+    }
+
+    ## balance the contribution of predictors.
+    y <- y / rowSums(C)
+    y <- y / array(rowSums(y, dims=2), c(N, M, 3))
+    
+    ## imputation
+    p <- 0 * y[, , 1] + 1* y[, , 2] + 2 * y[, , 3]
+
+    g[Z] <- p[Z]
     g
 }
 
