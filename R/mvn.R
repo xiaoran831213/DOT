@@ -1,9 +1,77 @@
-pmvn <- function(x, m=NULL, v=NULL, pts=1e5, tol=NULL)
+pmvn <- function(x, b=NULL, m=NULL, v=NULL, pts=1e5, tol=NULL)
+{
+    if(is.vector(x)) # quantile
+        x <- t(x)
+    n <- nrow(x)
+    p <- ncol(x)
+
+    ## bounds
+    if(is.null(b))
+    {
+        a <- matrix(-Inf, n, p)
+        b <- x
+    }
+    else
+        a <- x
+    
+    if(is.null(m)) # mean
+        m <- 0
+    m <- rep(m, p)
+
+    if(is.null(v)) # covariance
+        v <- 1
+    if(is.vector(v))
+        v <- diag(v, p)
+
+    ## take samples
+    if(is.null(tol)) # sqrt cov
+        tol <- sqrt(.Machine$double.eps)
+    z <- with(svd(v),
+    {
+        d[d < d[1] * tol] <- 0
+        u %*% (sqrt(d) * t(v))
+    })
+    y <- z %*% matrix(rnorm(p * pts), p, pts) + m
+    
+    r <- double(n)
+    for(i in seq(n))
+        r[i] <- mean(colSums(a[i, ] < y & y < b[i, ]) == p)
+    r
+}
+
+mpdf <- function(x, m=NULL, v=NULL)
+{
+    if(is.vector(x)) # points
+        x <- t(x)
+    n <- nrow(x)
+    p <- ncol(x)
+
+    if(is.null(m)) # mean
+        m <- 0
+    m <- rep(m, len=p)
+    x <- sweep(x, 2, m)
+    
+    if(is.null(v)) # covariance
+        v <- 1
+    if(is.vector(v))
+        v <- diag(v, p)
+
+    u <- chol(v)
+    a <- chol2inv(u)
+    r <- -.5 * rowSums(x %*% a * x) - sum(log(diag(u))) - .5 * log(2*pi)
+    exp(r)
+}
+
+wmvn <- function(x, b=NULL, m=NULL, v=NULL, pts=1e3)
 {
     if(is.vector(x))                    # quantile
         x <- t(x)
     n <- nrow(x)
     p <- ncol(x)
+
+    a <- 0 * x
+    b <- x
+    d <- (b - a) / pts
 
     if(is.null(m))                      # mean
         m <- 0
@@ -14,29 +82,20 @@ pmvn <- function(x, m=NULL, v=NULL, pts=1e5, tol=NULL)
     if(is.vector(v))
         v <- diag(v, p)
 
-    if(is.null(tol))                    # sqrt cov
-        tol <- sqrt(.Machine$double.eps)
-    z <- with(svd(v),
+    psum <- 0 * d[, 1]
+    for(i in seq(0, pts))
     {
-        i <- d > d[1] * tol
-        d <- d[i]
-        u <- u[i, i]
-        v <- v[i, i]
-        u %*% (sqrt(d) * t(v))
-    })
-
-    y <- z %*% matrix(rnorm(p * pts), p, pts)
-
-    r <- apply(x, 1, function(.)
-    {
-        mean(colSums(y < .) == p)
-    })
-    r
+        x <- a + i * d
+        f <- mpdf(x, m, v)
+        psum <- psum + f
+    }
+    psum / pts
 }
-
 
 mcdf <- function(x, mu=NULL, sigma=diag(ncol(x)), a=NULL)
 {
+    if(is.vector(x))
+        x <- t(x)
     ## Monte-Carlo confidence factor for the standard error: 99 %
     gamma = 2.5;
     ## Tolerance
@@ -60,9 +119,9 @@ mcdf <- function(x, mu=NULL, sigma=diag(ncol(x)), a=NULL)
     if(is.null(a))
         a <- matrix(-Inf, cases, q)
 
-    ## Cholesky Upper Tri
-    u <- chol(sigma)
-
+    ## Cholesky lower Tri
+    u <- t(chol(sigma))
+    
     ## Number of integral transformations
     n <- 1
 
@@ -78,40 +137,24 @@ mcdf <- function(x, mu=NULL, sigma=diag(ncol(x)), a=NULL)
         w <- matrix(runif(cases * (q - 1)), cases, q - 1)
         
         ## Transformation of the multivariate normal integral
-        dvev <- pnorm(cbind(a[, 1] / u[1, 1], x[, 1] / u[1, 1]))
-        dv <- dvev[, 1]
-        ev <- dvev[, 2]
-        fv <- ev - dv
+        d <- pnorm(a[, 1] / u[1, 1])
+        e <- pnorm(x[, 1] / u[1, 1])
+        f <- e - d
         y <- matrix(0, cases, q - 1)
 
         for(i in seq(q - 1))
         {
-            y[, i] <- qnorm(dv + w[, i] * (ev - dv))
-
-            dvev <- pnorm(cbind(
-            (a[, i + 1, drop=FALSE] - u[i + 1, 1:i, drop=FALSE] * y[, 1:i, drop=FALSE]) / u[i + 1, i + 1],
-            (x[, i + 1, drop=FALSE] - u[i + 1, 1:i, drop=FALSE] * y[, 1:i, drop=FALSE]) / u[i + 1, i + 1])
-            )
-
-            dv <- dvev[, 1];
-            ev <- dvev[, 2];
-            fv <- (ev - dv) * fv;
+            y[, i] <- qnorm(d + w[, i] * (e - d))
+            d <- pnorm((a[, i+1] - sum(u[i+1, 1:i] * y[, 1:i])) / u[i+1, i+1])
+            e <- pnorm((x[, i+1] - sum(u[i+1, 1:i] * y[, 1:i])) / u[i+1, i+1])
+            f <- (e - d) * f;
         }
         n <- n + 1
 
         ## Estimate standard error
-        varsum <- varsum + (n - 1) * ((fv - p)^2) / n
+        varsum <- varsum + (n - 1) * ((f - p)^2) / n
         err <- gamma * sqrt (varsum / (n * (n - 1)))
-        p <- p + (fv - p) / n
+        p <- p + (f - p) / n
     }
     list(p=p, err=err)
-}
-
-ts1 <- function()
-{
-    x <- matrix(c(1, 2), 1, 2)
-    mu <- c(0.5, 1.5)
-    sigma <- matrix(c(1.0, 0.5, 0.5, 1.0), 2, 2)
-    ret <- mcdf(x, mu, sigma)
-    ret
 }

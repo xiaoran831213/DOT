@@ -21,11 +21,11 @@
 #' The property  of combined statistics via  \link{dot_art}, \link{dot_rtp}, and
 #' \link{dot_fisher} are detailed in the reference below.
 #'
-#' @param Z vector of association test statistics (i.e., Z-scores)
-#' @param C matrix  of correlation  among the test  statistics, as  obtained by
-#'     \code{\link{cst}}
-#' @param k combine  the \code{k}  most  significant test  statistics  (i.e.,
-#'     \code{k} smallist p-values)
+#' @param Z vector of association test statistics (i.e., Z-scores).
+#' @param  C matrix of  correlation among the  test statistics, as  obtained by
+#'     \code{\link{cst}}.
+#' @param k controls how many top statistics (i.e., \code{k} smallist p-values)
+#'     to be combined.
 #' @param ... additional parameters
 #'
 #' @return
@@ -34,10 +34,13 @@
 #' statistics Y, and the corresponding p-value P.
 #'
 #' @references
-#' \href{https://www.frontiersin.org/articles/10.3389/fgene.2019.01051}{Detecting
-#' Weak Signals by Combining Small P-Values in Genetic Association Studies}
+#' \href{https://www.frontiersin.org/articles/10.3389/fgene.2019.01051}{
+#' Vsevolozhskaya, O.   A., Hu, F.,  & Zaykin,  D.  V. (2019).   Detecting weak
+#' signals  by  combining  small   P-values  in  genetic  association  studies.
+#' Frontiers in genetics, 10, 1051.}
 #'
 #' @name dot_sst
+#' @export
 #'
 #' @examples
 #' ## get the test statistics and pre-calculated LD matrix
@@ -101,6 +104,54 @@ dot_art <- function(Z, C, k, ...)
 
 #' @describeIn dot_sst
 #'
+#' De-correlation followed by Augmented Rank Trucated Adaptive (ARTA) Test
+#'
+#' The paramter  \code{k} limite the number  of top statistics to  combine. The
+#' actual number of statistics included is decided adaptively.
+#'
+#' @return
+#' the actual number (\code{k}) of statistics combined
+#'
+#' @param pts number of samples for MVN integration
+#' 
+#' @examples
+#'
+#' ## de-correlated augmented rank trucated (ART) test
+#' rpt <- dot_arta(stt, sgm, round(length(stt)/2), pts=1e7)
+#' print(rpt$Y)  # -1.738662
+#' print(rpt$k)  #  5
+#' print(rpt$P)  #  0.003174 (varies)
+dot_arta <- function(Z, C, k, pts=1e6, ...)
+{
+    L <- length(Z) # number of statistics
+    if(missing(k)) # k = L (default)
+        k <- L
+
+    wgt <- rep(1, k)
+    ret <- dot(Z, C)
+
+    P <- sort(1 - pchisq(ret$X^2, df=1))
+
+    . <- ((1 - P) / c(1, 1 - P[-L]))^(L:1)
+    p <- (1 - .)[1:k]
+
+    sumQ <- cumsum(qnorm(p) * wgt)
+
+    pSg <- matrix(cumsum(wgt[1:k]^2), k, k)
+    pSg[lower.tri(pSg)] <- t(pSg)[lower.tri(pSg)]
+    pCr <- cov2cor(pSg)
+
+    sQ <- sumQ / sqrt(diag(pSg))
+
+    Y <- max(sQ)
+    ## P <- pmvnorm(lower = rep(-Inf,k), upper = rep(max(sQ), k), sigma = pCr)[1]
+    P <- pmvn(rep(max(Y), k), v=pCr, pts=pts)
+    c(list(P=P, k=which.min(sQ), Y=Y), ret)
+}
+
+
+#' @describeIn dot_sst
+#'
 #' De-correlation followed  by Rank Trucated Product (RTP) Test
 #'
 #' @examples
@@ -128,43 +179,6 @@ dot_rtp <- function(Z, C, k, ...)
         },
         0, 1, Y, k, L)$va
     })
-}
-
-#' @describeIn dot_sst
-#'
-#' De-correlation followed  by adapted Augmented Rank Trucated (ART) Test 
-dot_aart <- function(P, k, L)
-{
-    L <- length(Z)                      # number of statistics
-    if(missing(k))                      # k = L / 2 (default)
-        k <- round(L * .5)
-        
-    ## "ART-A"
-    wgt <- rep(1,k)
-    z <- P
-    z[1] <- ( 1 - P[1] )^L
-    for(j in 2:L) z[j] <- ((1-P[j]) / (1-P[j-1]))^((L-(j-1)))
-    p <- (1-z)[1:k]
-    k = length(p)
-    sumZ <- rep(0, k)
-    y <- qnorm(p)
-    z <- y
-    gz <- z[1] * wgt[1]
-    sumZ[1] <- gz
-    for(i in 2:k) {
-        gz <- p[ 1 : i ]
-        for(j in 1:i) gz[j] <- z[j] * wgt[j]
-        sumZ[i] <- sum(gz)
-    }
-    Lo = diag(k); Lo[lower.tri(Lo)] <- 1
-    pSg <- Lo %*% diag(wgt[1:k]^2) %*% t(Lo)
-    pCr <- cov2cor(pSg)
-    sZ <- sumZ
-    for(i in 1:k) {
-        sZ[i] <- sumZ[i] / sqrt(diag(pSg))[i]
-    }
-    ppZ <- pmvnorm(lower = rep(-Inf,k), upper = rep(max(sZ), k), sigma = pCr)[1]
-    c(ppZ, which.min(sZ))
 }
 
 
