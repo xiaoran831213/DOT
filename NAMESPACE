@@ -2,4 +2,9 @@
 
 export(cst)
 export(dot)
+export(dot_art)
+export(dot_arta)
+export(dot_chisq)
+export(dot_fisher)
+export(dot_rtp)
 export(zsc)
