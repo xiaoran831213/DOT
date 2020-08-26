@@ -51,12 +51,12 @@
 #' stt <- with(res, zsc(P, BETA))
 #'
 #' ## decorrelate z-scores by DOT
-#' rpt <- dot(stt, sgm)
-#' print(rpt$X)          # decorrelated statistics
-#' print(rpt$W)          # orthogonal transformation
+#' result <- dot(stt, sgm)
+#' print(result$X)          # decorrelated statistics
+#' print(result$W)          # orthogonal transformation
 #'
 #' ## sum of squares of decorrelated statistics is a chi-square
-#' ssq <- sum(rpt$X^2)
+#' ssq <- sum(result$X^2)
 #' pvl <- 1 - pchisq(ssq, df=length(stt))
 #'
 #' print(ssq)            # sum of square = 35.76306
@@ -100,5 +100,5 @@ dot <- function(Z, C=NULL, ...)
 #' @export
 zsc <- function(P, BETA)
 {
-    stats::qnorm(P / 2) * (sign(BETA))
+    qnorm(P / 2) * (sign(BETA))
 }

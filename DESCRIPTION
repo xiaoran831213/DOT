@@ -10,7 +10,7 @@ Authors@R: c(
           comment = c(ORCID = "0000-0002-9444-2859")),
   person("Xiaoran", "Tong", email = "tongxia1@msu.edu", role = c("aut", "cre"),
           comment = c(ORCID = "0000-0002-4648-3330")))
-Depends: R (>= 3.1)
+Depends: R (>= 3.1), mvtnorm
 License: GPL (>= 2)
 URL: https://github.com/xiaoran831213/dotgen
 Encoding: UTF-8

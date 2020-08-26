@@ -1,4 +1,4 @@
-#' Schur complement
+#' Sick complement
 #'
 #' Given a full matrix \code{X} and a target block \code{C} within,
 #' 
@@ -170,6 +170,10 @@ imp <- function(g)
 #' \code{cor(g)}. In this case,  \code{\link{cst}} takes the generalized inverse
 #' of the entire correlation matrix,  \code{corr(cbind(g, x))}, and then inverts
 #' back only the submtarix containing genotype variables, \code{g}.
+#'
+#' Missed  genotype  calls are  fill  with  soft  allele dosage  values  between
+#' interval [0,  2], imputed with information  from all observed entries  in the
+#' genotype matrix.
 #'
 #' @param g matrix of genotype, one row per sample, one column per variant;
 #' @param x matrix of covariates, one row per sample.
