@@ -87,12 +87,13 @@ dot_art <- function(Z, C, k=NULL, ...)
     L <- length(Z)                      # number of statistics
     if(is.null(k))                      # k = L / 2 (default)
         k <- round(L * .5)
-
     ret <- dot(Z, C, ...)
 
     ## decorrelated two-tail p-values, sorted
     P <- sort(1 - pchisq(ret$X^2, df=1))
-        
+    if(any(P == 0))
+        return(c(list(P=0, Y=1, k=k, ret)))
+
     ## summarized statistics: shape parameter
     S <- (k - 1) * (digamma(L + 1) - digamma(k))
 
@@ -104,7 +105,7 @@ dot_art <- function(Z, C, k=NULL, ...)
 
     ## summarized statistics: p-value
     P <- 1 - pgamma(Y, k + S - 1)
-
+    
     c(list(P=P, Y=Y), ret)
 }
 
@@ -251,12 +252,16 @@ dot_tpm <- function(Z, C, tau=0.05, ...)
 
     ret <- dot(Z, C, ...)               # decorrelated two-tail p-values
     P <- 1 - pchisq(ret$X^2, 1)
+
     k <- sum(P <= tau)
     if(k == 0)
         return(c(list(P=1, Y=1, k=k, ret)))
+    if(any(P == 0))
+        return(c(list(P=0, Y=1, k=k, ret)))
+
 
     lw <- sum(log(P[P <= tau]))         # log(w), w = prod(p_i | p_i<=tau)
-
+    
     ## sequence: k = 1 .. L
     K <- seq(L)
 
@@ -275,10 +280,10 @@ dot_tpm <- function(Z, C, tau=0.05, ...)
         lpw[k] <- lw + log(sum(.))
     }
     lpw[lw > klt] <- klt[lw > klt]      # case 2: ln(w)  > k ln(tau)
-
+    
     ## sum Pr(k) Pr(W <= w|k), k = 1 .. L
     P <- sum(exp(lpk + lpw))
     Y <- exp(lw)
-
+    
     c(list(P=P, Y=Y, k=k, ret))
 }
