@@ -1,21 +1,25 @@
-#' Decorrelation by Orthogonal Transformation
+#' Decorrelation by Orthogonal Transformation (DOT)
 #'
 #' \code{\link{dot}}  decorrelates   genetic  association  test   statistics  by
-#' symmetric orthogonal transformation.
+#' special symmetric orthogonal transformation.
 #'
 #' @details
 #' Genetic  association studies  typically provide  per-variant test  statistics
 #' that can be  converted to asymptotically normal, signed  Z-scores. Once those
 #' Z-scores are transformed to independent random variables, various methods can
-#' be applied to combined them and obtain SNP-set overall association.
+#' be applied to combine them and obtain SNP-set overall association.
 #' 
-#' \code{\link{dot}} uses  existing genetic association test  statistics and the
-#' correlation among these statistics to decorrelate Z-scores.
+#' \code{\link{dot}} uses  per-variant genetic association test  statistics and
+#' the correlation among them to decorrelate Z-scores.
 #'
-#' To estimate  the correlation among  genetic association test  statistics, use
-#' \code{\link{cst}}.    If   p-values   and  estimated   effects   (i.e,   beta
-#' coefficients) are given instead of  test statistics, use \code{\link{zsc}} to
-#' recover the test statistics (i.e., Z-scores).
+#' To estimate the  correlation among genetic association  test statistics, use
+#' \code{\link{cst}}.    If  P-values   and   estimated   effects  (i.e,   beta
+#' coefficients) are given instead of test statistics, \code{\link{zsc}} can be
+#' used to recover the test statistics (i.e., Z-scores).
+#'
+#' XT:
+#' A number statistics that combines de-correlated P-values are made available,
+#' see \code{\link{dot_sst}} for detailed.
 #'
 #' For details about DOT, see the reference below.
 #'
@@ -42,15 +46,15 @@
 #' cvr <- readRDS(system.file("extdata", 'rs208294_cvr.rds', package="dotgen"))
 #'
 #' ## estimate the correlation among association test statistics
-#' sgm <- cst(gno, cvr)
+#' sgm <- cst(gno, cvr)$C
 #'
-#' ## get the result of genetic association analysis (p-values and effects)
+#' ## get the result of genetic association analysis (P-values and effects)
 #' res <- readRDS(system.file("extdata", 'rs208294_res.rds', package="dotgen"))
 #'
-#' ## recover z-score statistics
+#' ## recover Z-score statistics
 #' stt <- with(res, zsc(P, BETA))
 #'
-#' ## decorrelate z-scores by DOT
+#' ## decorrelate Z-scores by DOT
 #' result <- dot(stt, sgm)
 #' print(result$X)          # decorrelated statistics
 #' print(result$W)          # orthogonal transformation
@@ -60,7 +64,7 @@
 #' pvl <- 1 - pchisq(ssq, df=length(stt))
 #'
 #' print(ssq)            # sum of square = 35.76306
-#' print(pvl)            # chisq p-value =  0.001132132
+#' print(pvl)            # chisq P-value =  0.001132132
 #' @export
 dot <- function(Z, C=NULL, ...)
 {
@@ -71,27 +75,27 @@ dot <- function(Z, C=NULL, ...)
     list(Z=Z, W=W, X=X)
 }
 
-#' Z-scores from p-values and estimated effects
+#' Calculate Z-scores from P-values and estimated effects
 #'
-#' \code{\link{zsc}} recovers  Z-scores from  p-values and  corresponding effect
+#' \code{\link{zsc}} recovers  Z-scores from  P-values and  corresponding effect
 #' directions (or beta coefficients) reported by a genetic association analysis.
 #'
 #' @details
 #'
-#' For any  genetic variant,  its two-sided  p-value (\eqn{p})  and the  sign of
+#' For any  genetic variant,  its two-sided  P-value (\eqn{p})  and the  sign of
 #' estimated effect (\eqn{\beta}) is used to recover the Z-score (\eqn{z}), that
 #' is, \eqn{z = sign(\beta) \Phi^{-1}(p/2)}.
 #'
 #' @seealso \code{\link{dot}}
 #'
-#' @param P vector of p-values
-#' @param BETA vector of effect directions or beta coefficients
-#' @return vector of Z-scores
+#' @param P vector of P-values.
+#' @param BETA vector of effect directions or beta coefficients.
+#' @return A vector of Z-scores.
 #' @examples
-#' ## result of per-variant analysis (p-values and estimated effects)
+#' ## result of per-variant analysis (P-values and estimated effects)
 #' res <- readRDS(system.file("extdata", 'rs208294_res.rds', package="dotgen"))
 #'
-#' ## recover z-score statistics
+#' ## recover Z-score statistics
 #' stt <- with(res, zsc(P, BETA))
 #'
 #' ## checking

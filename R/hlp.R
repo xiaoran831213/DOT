@@ -1,4 +1,4 @@
-#' Sick complement
+#' Schur complement
 #'
 #' Given a full matrix \code{X} and a target block \code{C} within,
 #' 
@@ -62,7 +62,21 @@ nsp <- function(X)
 }
 
 
-#' Impute missing genotype calls
+#' Impute by Average Variant
+#'
+#' @param g genotype matrix in allele dosage format
+#' @return matrix with imputed dosage values
+imp.avg <- function(g)
+{
+    apply(g, 2L, function(x)
+    {
+        i <- which(is.na(x))
+        x[i] <- mean(x[-i])
+        x
+    })
+}
+
+#' Impute by Conditional Expectation
 #'
 #' Soft imputation of missing values considering the correlation among variants
 #'
@@ -72,9 +86,9 @@ nsp <- function(X)
 #' missed calls.
 #'
 #' @param g genotype matrix in allele dosage format
-#' @return the same matrix with imputed dosage values
+#' @return matrix with imputed dosage values
 #' @noRd
-imp <- function(g)
+imp.cxp <- function(g)
 {
     N <- nrow(g); M <- ncol(g); Z <- is.na(g); C <- !Z
 
@@ -156,39 +170,68 @@ imp <- function(g)
 }
 
 
-#' Correlation among association statistics
+#' Correlation among association test statistics
 #'
-#' \code{\link{cst}} calculates  the correlation among genetic  association test
-#' statistics
+#' Calculates the correlation among genetic association test statistics.
 #'
 #' @details
-#' When no covariates were present in the original genetic association analysis,
-#' that is, \code{x==NULL}, correlation among the test statistics is the same as
-#' correlation among the variants \code{cor(g)}.
+#' When no covariates are present in per-variant association analyses, that is,
+#' \code{x==NULL},  correlation  among  test  statistics is  the  same  as  the
+#' correlation among variants, \code{cor(g)}.
 #'
-#' With covariates,  the correlation among  test statistics  is not the  same as
-#' \code{cor(g)}. In this case,  \code{\link{cst}} takes the generalized inverse
-#' of the entire correlation matrix,  \code{corr(cbind(g, x))}, and then inverts
+#' With  covariates, correlation  among  test  statistics is  not  the same  as
+#' \code{cor(g)}. In this case, \code{\link{cst}} takes the generalized inverse
+#' of the entire correlation matrix, \code{corr(cbind(g, x))}, and then inverts
 #' back only the submtarix containing genotype variables, \code{g}.
 #'
-#' Missed  genotype  calls are  fill  with  soft  allele dosage  values  between
-#' interval [0,  2], imputed with information  from all observed entries  in the
-#' genotype matrix.
+#' Missed genotype calls are fill  with 'soft' (i.e., continuous) allele dosage
+#' values  in the  interval from  0 to  2, imputed  using information  from all
+#' non-missing entries in the genotype matrix.
 #'
-#' @param g matrix of genotype, one row per sample, one column per variant;
-#' @param x matrix of covariates, one row per sample.
+#' By default (\code{imp=0}), missed calls for each variant are filled with the
+#' average of non-missing entires; setting \code{imp=1} uses advance techniques
+#' based on expected allele count of one variant conditioned on other variants.
+#'
+#' The advance imputation (\code{imp=1})  improves statistical power in certian
+#' cases, but  we highly suggest  the user to  rerun the association  test with
+#' imputed genotype to avoid type I error.
+#'
+#' @param  g matrix of  genotype, one row per  sample, one column  per variant,
+#'     missings allewed.
+#' @param x matrix of covariates, one row per sample, no missing allowed.
+#' @param imp  imputation methods,  0=naive averge,  1=conditional expectation
+#'     (def=0).
+#'
+#' @return a list containing
+#' \itemize{
+#' \item{G}{imputed genotype matrix, no missing entreis}
+#' \item{C}{the correlation matrix \code{cor{G}}}
+#' }
+#'
 #' @examples
 #' ## get genotype and covariate matrices
 #' gno <- readRDS(system.file("extdata", 'rs208294_gno.rds', package="dotgen"))
 #' cvr <- readRDS(system.file("extdata", 'rs208294_cvr.rds', package="dotgen"))
 #'
 #' ## correlation among association statistics, covariates involved
-#' sgm <- cst(gno, cvr)
-#' print(sgm[1:4, 1:4])
+#' res <- cst(gno, cvr)
+#' print(res$C[1:4, 1:4])
+#'
+#' ## with 2% missed calls
+#' g02 <- readRDS(system.file("extdata", 'rs208294_g02.rds', package="dotgen"))
+#' cvr <- readRDS(system.file("extdata", 'rs208294_cvr.rds', package="dotgen"))
+#' res <- cst(g02, cvr, imp=0)
+#' print(res$C[1:4, 1:4])
+#' 
 #' @export
-cst <- function(g, x=NULL)
+cst <- function(g, x=NULL, imp=0)
 {
-    g <- imp(g) # impute missed calls
+    ## impute missed calls
+    if(imp == 1)
+        imp <- imp.cxp
+    else
+        imp <- imp.avg
+    g <- imp(g)
     
     if(is.null(x))
         r <- stats::cor(g)              # no covariate, use full cor
@@ -198,5 +241,5 @@ cst <- function(g, x=NULL)
         i <- seq(ncol(x))               # index of covariates
         r <- stats::cov2cor(scp(r, i))  # cond cor
     }
-    r
+    list(G=g, C=r)
 }

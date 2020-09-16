@@ -1,41 +1,47 @@
-#' Decorrelation followed by Summarized Statistical Test
+#' Methods for combining decorrelated summary statistics
 #'
-#' Summarize a  series of genetic  association test statistics  (i.e., Z-scores,
-#' \strong{Z}) given their correlation (i.e., LD-values, \strong{C}).
+#' Decorrelate  and combine  per-variant genetic  association test  statistics,
+#' \code{Z}  (i.e.,  Z-scores),  given   the  correlation  matrix  among  them,
+#' \code{C}.
 #'
 #' @details
 #'
-#' The original association statistics are normally Z-scores reported by a GWAS.
+#' These  functions  first  call  \code{\link{dot}(Z, C)}  to  decorrelate  the
+#' genetic  association test  statistics and  then provide  various options  to
+#' combine independent  statistics or  corresponding P-values into  the overall
+#' statistics and P-value.
 #'
-#' These functions first call \code{\link{dot}(Z, C)} to decorrelate the genetic
-#' association test statistics, allowing various of tools to combine independent
-#' statistics or corresponding  p-values into one statistics  and p-value, which
-#' essentially tests  the joint null: none  of the variants are  associated with
-#' the phenotype of interests.
-#'
-#' The  two  rank  truncated test  \code{\link{dot_art}},  \code{\link{dot_rtp}}
+#' The  two rank  truncated  test \code{\link{dot_art}},  \code{\link{dot_rtp}}
 #' require an additional  parameter \code{k} specifying the  number of smallest
-#' (decorrelated) p-values  to combine,  which by default  retains half  of the
-#' p-values.  The adaptive \code{\link{dot_arta}} on the other hand, decides the
-#' appropriate \code{k} automatically.
+#' (decorrelated) P-values  to combine;  by default, half  of the  P-values are
+#' retained.   The adaptive  rank  truncation method  (\code{\link{dot_arta}}),
+#' searches for the most appropriate truncation values up to \code{k}.
 #'
-#' Reference (a) details how to combine decorrelated test statistics or p-values
-#' via  \code{\link{dot_art}},  \code{\link{dot_rtp}} and  \link{dot_arta};  for
-#' \code{\link{dot_rtm}} and \code{\link{dot_fisher}}, see reference (b).
+#' The truncated  product method  (\code{\link{dot_tpm}}) combines  P-values at
+#' least  as  small  as  \code{tau}.   If   \code{tau}  is  equal  to  1,  then
+#' \code{\link{dot_tpm}} provides  the same result  as \code{\link{dot_fisher}}
+#' (i.e., Fisher's  method for combining  P-values). Similarly, if  \code{k} is
+#' equal to the total number of tests, the results of \code{\link{dot_art}} and
+#' \code{\link{dot_rtp}} will be the same as of \code{\link{dot_fisher}}.
+#'
+#' Reference \strong{a} details how to  combine decorrelated test statistics or
+#' P-values     via     \code{\link{dot_art}},    \code{\link{dot_rtp}}     and
+#' \link{dot_arta};  reference  \strong{b}  details  \code{\link{dot_tpm}}  and
+#' \code{\link{dot_fisher}} methods.
 #'
 #' @param Z vector of association test statistics (i.e., Z-scores).
 #' @param  C matrix  of correlation  among the test  statistics, as  obtained by
 #'     \code{\link{cst}}.
-#' @param k consider \code{k} smallest (decorrelated) p-values.
+#' @param k consider \code{k} smallest (decorrelated) P-values.
 #'
 #' @param ... additional parameters
 #'
-#' @return typically a list, with
+#' @return a list of
 #' \itemize{
-#' \item{\code{X}:} {decorrelated  association statistics}
-#' \item{\code{W}:} {orthogonal transformation, such that \code{X == WZ}}
-#' \item{\code{Y}:} {the summarized statistics}
-#' \item{\code{P}:} {the p-value corresponding to \code{Y}}
+#' \item{\code{X}:} {decorrelated  association statistics.}
+#' \item{\code{W}:} {orthogonal transformation, such that \code{X == WZ}.}
+#' \item{\code{Y}:} {the overall combined statistics.}
+#' \item{\code{P}:} {the P-value corresponding to \code{Y}.}
 #' }
 #'
 #' @references
@@ -44,6 +50,11 @@
 #' signals  by  combining  small   P-values  in  genetic  association  studies.
 #' Frontiers in genetics, 10, 1051.}
 #'
+#' (b) \href{https://onlinelibrary.wiley.com/doi/abs/10.1002/gepi.0042}{Zaykin,
+#' D. V., Zhivotovsky, L.  A., Westfall, P. H., & Weir, B. S. (2002). Truncated
+#' product method  for combining P‐values.  Genetic  Epidemiology: The Official
+#' Publication  of  the  International  Genetic  Epidemiology  Society,  22(2),
+#' 170-185.}
 #' @name dot_sst
 #' @seealso \code{\link{dot}}
 #' 
@@ -54,7 +65,7 @@
 NULL
 
 
-#' @describeIn dot_sst Decorrelation followed by Chi-square Test
+#' @describeIn dot_sst decorrelation followed by a Chi-square test.
 #'
 #' @examples
 #'
@@ -73,11 +84,11 @@ dot_chisq <- function(Z, C, ...)
 
 #' @describeIn dot_sst
 #'
-#' Decorrelated Augmented Rank Trucated (ART) Test 
+#' decorrelated Augmented Rank Trucated (ART) test. 
 #'
 #' @examples
 #'
-#' ## decorrelated augmented rank trucated (ART) test
+#' ## decorrelated augmented rank trucated (ART) test.
 #' result <- dot_art(stt, sgm, k=6)
 #' print(result$Y)  # 22.50976
 #' print(result$P)  #  0.0006704994
@@ -89,7 +100,7 @@ dot_art <- function(Z, C, k=NULL, ...)
         k <- round(L * .5)
     ret <- dot(Z, C, ...)
 
-    ## decorrelated two-tail p-values, sorted
+    ## decorrelated two-tail P-values, sorted
     P <- sort(1 - pchisq(ret$X^2, df=1))
     if(any(P == 0))
         return(c(list(P=0, Y=1, k=k, ret)))
@@ -103,7 +114,7 @@ dot_art <- function(Z, C, k=NULL, ...)
     Y <- Y - sum(log(P[1:(k - 1)]))
     Y <- Y + qgamma(1 - pbeta(P[k], k, L - k + 1), S)
 
-    ## summarized statistics: p-value
+    ## summarized statistics: P-value
     P <- 1 - pgamma(Y, k + S - 1)
     
     c(list(P=P, Y=Y), ret)
@@ -112,21 +123,21 @@ dot_art <- function(Z, C, k=NULL, ...)
 
 #' @describeIn dot_sst
 #'
-#' Decorrelated Augmented Rank Truncated Adaptive (ARTA) Test
+#' decorrelated Augmented Rank Truncated Adaptive (ARTA) test.
 #'
 #' @return
 #' for Augmented Rank Truncated Adaptive (ARTA) Test,
 #' \itemize{
-#' \item{k:} {the number of decorrelated p-values adaptively picked}}
+#' \item{k:} {the number of decorrelated P-values adaptively picked}}
 #'
 #' @param w weight assigned to cumulated statistics, default to 1.
 #' 
 #' @examples
 #'
-#' ## decorrelated augmented rank truncated adaptive (ARTA) test
+#' ## decorrelated Augmented Rank Truncated Adaptive (ARTA) test
 #' result <- dot_arta(stt, sgm, k=6)
 #' print(result$Y)  # -1.738662
-#' print(result$k)  #  5 smallest p-value retained
+#' print(result$k)  #  5 smallest P-value retained
 #' print(result$P)  #  0.003165 (varies)
 #' @export
 dot_arta <- function(Z, C, k=NULL, w=NULL, ...)
@@ -165,7 +176,7 @@ dot_arta <- function(Z, C, k=NULL, w=NULL, ...)
 
 #' @describeIn dot_sst
 #'
-#' Decorrelated Rank Truncated Product (RTP) Test
+#' Decorrelated Rank Truncated Product (RTP) test.
 #'
 #' @examples
 #'
@@ -181,7 +192,7 @@ dot_rtp <- function(Z, C, k=NULL, ...)
         k <- round(L * .5)
     k <- min(L, k)
 
-    ## decorrelated two-tail p-values, sorted
+    ## decorrelated two-tail P-values, sorted
     ret <- dot(Z, C, ...)
     P <- sort(1 - pchisq(ret$X^2, df=1))
 
@@ -197,11 +208,11 @@ dot_rtp <- function(Z, C, k=NULL, ...)
 
 #' @describeIn dot_sst
 #'
-#' Decorrelated Fisher's Combined p-value Test
+#' Decorrelated Fisher's combined P-value test.
 #'
 #' @examples
 #'
-#' ## decorrelated Fisher's combined p-value chi-square test
+#' ## decorrelated Fisher's combined P-value chi-square test
 #' result <- dot_fisher(stt, sgm)
 #' print(result$Y)  # 58.44147
 #' print(result$P)  #  0.0002706851
@@ -209,32 +220,32 @@ dot_rtp <- function(Z, C, k=NULL, ...)
 dot_fisher <- function(Z, C, ...)
 {
     L <- length(Z)                      # number of statistics
-    ret <- dot(Z, C, ...)               # decorrelated two-tail p-values
+    ret <- dot(Z, C, ...)               # decorrelated two-tail P-values
     P <- 1 - pchisq(ret$X^2, 1)
     
     Y <- -2 * sum(log(P))               # Fisher statistics
-    P <- 1 - pchisq(Y, 2 * L)           # summarized p-value
+    P <- 1 - pchisq(Y, 2 * L)           # summarized P-value
     c(list(P=P, Y=Y), ret)
 }
 
 
 #' @describeIn dot_sst
 #'
-#' Decorrelated Truncated Product Method (TPM).
+#' Decorrelated Truncated Product Method (TPM) test.
 #'
 #' @examples
 #'
 #' ## decorrelated Truncated Product Method (TPM)
 #' result <- dot_tpm(stt, sgm, tau=0.05)
 #' print(result$Y)  #  1.510581e-08
-#' print(result$k)  #  6 p-values <= tau
+#' print(result$k)  #  6 P-values <= tau
 #' print(result$P)  #  0.0007954961
 #'
-#' @param tau combine (decorrelated) p-values no large than tau (def=0.05).
+#' @param tau combine (decorrelated) P-values no large than tau (def=0.05).
 #' @return
 #' for Truncated Product Method (TPM),
 #' \itemize{
-#' \item{k:} {the number of decorrelated p-values \eqn{\le} \code{tau}}}
+#' \item{k:} {the number of decorrelated P-values \eqn{\le} \code{tau}}}
 #'
 #' @references
 #' (b) \href{https://onlinelibrary.wiley.com/doi/abs/10.1002/gepi.0042}{Zaykin,
@@ -250,7 +261,7 @@ dot_tpm <- function(Z, C, tau=0.05, ...)
     if(is.null(tau))                    # k = L / 2 (default)
         tau <- 0.05
 
-    ret <- dot(Z, C, ...)               # decorrelated two-tail p-values
+    ret <- dot(Z, C, ...)               # decorrelated two-tail P-values
     P <- 1 - pchisq(ret$X^2, 1)
 
     k <- sum(P <= tau)
