@@ -64,7 +64,7 @@ nsp <- function(X)
 
 #' Impute missing genotype calls
 #'
-#' Soft guess of missing values considering the correlation among variants
+#' Soft imputation of missing values considering the correlation among variants
 #'
 #' @details
 #' The imputation can be seen as predicting  each of the \code{M} variant by the
