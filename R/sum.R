@@ -18,7 +18,7 @@
 #' searches for the most appropriate truncation values up to \code{k}.
 #'
 #' The truncated  product method  (\code{\link{dot_tpm}}) combines  P-values at
-#' least  as  small  as  \code{tau}.   If   \code{tau}  is  equal  to  1,  then
+#' least as small as \code{tau} (def=0.05).   If \code{tau} is equal to 1, then
 #' \code{\link{dot_tpm}} provides  the same result  as \code{\link{dot_fisher}}
 #' (i.e., Fisher's  method for combining  P-values). Similarly, if  \code{k} is
 #' equal to the total number of tests, the results of \code{\link{dot_art}} and
@@ -64,8 +64,9 @@
 #' sgm <- readRDS(system.file("extdata", 'art_ldm.rds', package="dotgen"))
 NULL
 
-
-#' @describeIn dot_sst decorrelation followed by a Chi-square test.
+#' @describeIn dot_sst
+#'
+#' decorrelation followed by a Chi-square test.
 #'
 #' @examples
 #'
@@ -97,7 +98,8 @@ dot_art <- function(Z, C, k=NULL, ...)
 {
     L <- length(Z)                      # number of statistics
     if(is.null(k))                      # k = L / 2 (default)
-        k <- round(L * .5)
+        k <- round(L * .5)              #
+    k <- min(L, k)                      # k <= L
     ret <- dot(Z, C, ...)
 
     ## decorrelated two-tail P-values, sorted
@@ -143,12 +145,12 @@ dot_art <- function(Z, C, k=NULL, ...)
 dot_arta <- function(Z, C, k=NULL, w=NULL, ...)
 {
     L <- length(Z)                      # number of statistics
-    if(is.null(k))                      # k = L (default)
-        k <- L
+    if(is.null(k))                      # k = L/2 (default)
+        k <- round(L * 0.5)
     if(is.null(w))
         w <- rep(1, k)
     k <- min(k, L)                      # k <= L
-    w <- w[k]                           # first k weights
+    w <- w[1:k]                         # first k weights
 
     ret <- dot(Z, C)
     P <- sort(1 - pchisq(ret$X^2, df=1))
@@ -263,13 +265,13 @@ dot_tpm <- function(Z, C, tau=0.05, ...)
 
     ret <- dot(Z, C, ...)               # decorrelated two-tail P-values
     P <- 1 - pchisq(ret$X^2, 1)
+    tau <- min(tau, max(P))
 
     k <- sum(P <= tau)
     if(k == 0)
         return(c(list(P=1, Y=1, k=k, ret)))
     if(any(P == 0))
         return(c(list(P=0, Y=1, k=k, ret)))
-
 
     lw <- sum(log(P[P <= tau]))         # log(w), w = prod(p_i | p_i<=tau)
     
@@ -278,7 +280,7 @@ dot_tpm <- function(Z, C, tau=0.05, ...)
 
     ## log Pr(k) = log(L choose k) + log((1 - tau)^(L - k), k = 1..L
     lpk <- lchoose(L, K) + (L - K) * log(1 - tau)
-
+    
     ## log Pr(W <= w | k)
     lpw <- double(L)
     klt <- K * log(tau)                 # k ln(tau), k = 1..L
