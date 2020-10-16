@@ -75,12 +75,69 @@ NULL
 #' print(result$Y)  # 37.2854
 #' print(result$P)  #  0.0003736988
 #' @export
-dot_chisq <- function(Z, C, ...)
+dot_chisq <- function(Z, C, d=NULL, ...)
 {
-    ret <- dot(Z, C, ...)
-    Y <- sum(ret$X^2)
-    P <- 1 - pchisq(Y, df=length(Z))
+    i <- tcv(C, ...)
+    if(!all(i))
+    {
+        cat("SNP=", sum(i), ", ", sep="")
+        Z <- Z[i]
+        C <- C[i, i]
+    }
+        
+    ret <- dot(Z, C, ...)        # decorrelate
+    L <- ret$L                   # effective number of eigenvalues
+    M <- length(Z)
+    L <- min(L, M)
+
+    Y <- sum(ret$X^2)            # sum of squares
+    if(is.null(d))
+        d <- L
+    P <- 1 - pchisq(Y, df=d)     # a single p-value
     c(list(P=P, Y=Y), ret)
+}
+
+
+
+#' @describeIn dot_sst
+#'
+#' Decorrelated Fisher's combined P-value test.
+#'
+#' @examples
+#'
+#' ## decorrelated Fisher's combined P-value chi-square test
+#' result <- dot_fisher(stt, sgm)
+#' print(result$Y)  # 58.44147
+#' print(result$P)  #  0.0002706851
+#' @export
+dot_fisher <- function(Z, C, d=NULL, ...)
+{
+    ret <- dot(Z, C, ...)               # decorrelate
+    X <- ret$X
+    L <- ret$L                          # effective number of eigenvalues
+    M <- length(Z)
+    L <- min(L, M)
+    
+    ## rescale decorrelated statstics to unit variance
+    W <- ret$W
+    r <- W %*% C %*% W
+    X <- X / sqrt(diag(r))
+
+    ## sum square statistics which follows a gamma distribution
+    Y <- sum(X^2)
+
+    ## theoratical mean and variance of the sum square statistics
+    w <- eigen(cov2cor(r), TRUE, TRUE)$values
+    m <- sum(w)
+    v <- 2 * sum(w^2)
+
+    ## shape and scale of the gamma distribution
+    sh <- m^2 / v # gamma shape 
+    sc <- v   / m # gamma scale
+    
+    ## p-value from the gamma distribution
+    P <- 1 - pgamma(Y, sh, sc)
+    c(list(P=P, Y=Y, Z=Z, X=X, L=L))
 }
 
 #' @describeIn dot_sst
@@ -96,14 +153,16 @@ dot_chisq <- function(Z, C, ...)
 #' @export
 dot_art <- function(Z, C, k=NULL, ...)
 {
-    L <- length(Z)                      # number of statistics
-    if(is.null(k))                      # k = L / 2 (default)
-        k <- round(L * .5)              #
-    k <- min(L, k)                      # k <= L
-    ret <- dot(Z, C, ...)
+    ret <- dot(Z, C, ...)               # decorrelate
+    L <- ret$L                          # effective number of eigenvalues
+    P <- 1 - pchisq(ret$X^2, df=1)      # decorrelated two-tail P-values
+    P <- sort(unique(P))                # sort
 
-    ## decorrelated two-tail P-values, sorted
-    P <- sort(1 - pchisq(ret$X^2, df=1))
+    M <- length(P)                      # number of p-values
+    if(is.null(k))                      # k = M / 2 (default)
+        k <- round(M * .5)              #
+    k <- min(L, k, M)                   # k <= L
+
     if(any(P == 0))
         return(c(list(P=0, Y=1, k=k, ret)))
 
@@ -144,23 +203,30 @@ dot_art <- function(Z, C, k=NULL, ...)
 #' @export
 dot_arta <- function(Z, C, k=NULL, w=NULL, ...)
 {
-    L <- length(Z)                      # number of statistics
+    ret <- dot(Z, C, ...)               # decorrelate
+    L <- ret$L                          # effective number of eigenvalues
+    P <- 1 - pchisq(ret$X^2, df=1)      # decorrelated two-tail P-values
+    P <- sort(unique(P))                # sorted
+
+    M <- length(P)                      # number of p-values
     if(is.null(k))                      # k = L/2 (default)
-        k <- round(L * 0.5)
+        k <- round(M * 0.5)
+    k <- min(k, L, M)                   # k <= L
+
     if(is.null(w))
         w <- rep(1, k)
-    k <- min(k, L)                      # k <= L
     w <- w[1:k]                         # first k weights
 
-    ret <- dot(Z, C)
-    P <- sort(1 - pchisq(ret$X^2, df=1))
-
     ## z_i = [(1 - p_i) / (1 - p_{i-1})]^(L - i + 1), i = 1 .. L, p_0 = 1
-    z <- ((1 - P) / c(1, 1 - P[-L]))^(L:1)
-
+    z <- ((1 - P) / c(1, 1 - P[-M]))^(M:1)
+    
     ## cumulate the top-ranking k statistics, apply weights
     p <- (1 - z)[1:k]
+    q <- qnorm(p) * w
 
+    if(max(q) == Inf)
+        return(c(list(P=1, k=which(q==Inf)[1], Y=Inf), ret))
+    
     sumQ <- cumsum(qnorm(p) * w)
 
     ## L(1) %*% diag(w^2) %*% U(1)
@@ -171,7 +237,14 @@ dot_arta <- function(Z, C, k=NULL, w=NULL, ...)
     sQ <- sumQ / sqrt(diag(pSg))
 
     Y <- max(sQ)
-    P <- mvtnorm::pmvnorm(lower=rep(-Inf,k), upper=rep(max(sQ), k), sigma=pCr)[1]
+    P <- try(mvtnorm::pmvnorm(lower=rep(-Inf, k), upper=rep(max(sQ), k), sigma=pCr))
+    if(inherits(P, 'try-error'))
+    {
+        print("bad")
+        P <- 1
+    }
+    else
+        P <- P[1]
     c(list(P=P, k=which.min(sQ), Y=Y), ret)
 }
 
@@ -189,14 +262,15 @@ dot_arta <- function(Z, C, k=NULL, w=NULL, ...)
 #' @export
 dot_rtp <- function(Z, C, k=NULL, ...)
 {
-    L <- length(Z)                      # number of statistics
-    if(is.null(k))                      # k = L / 2 (default)
-        k <- round(L * .5)
-    k <- min(L, k)
+    ret <- dot(Z, C, ...)               # decorrelate
+    L <- ret$L                          # effective number of eigenvalues
+    P <- 1 - pchisq(ret$X^2, df=1)      # decorrelated two-tail P-values
+    P <- sort(unique(P))                # sorted
 
-    ## decorrelated two-tail P-values, sorted
-    ret <- dot(Z, C, ...)
-    P <- sort(1 - pchisq(ret$X^2, df=1))
+    M <- length(P)                      # number of p-values
+    if(is.null(k))                      # k = M / 2 (default)
+        k <- round(M * .5)
+    k <- min(L, k, M)
 
     Y <- sum(-log(P[1:k]))
     P <- integrate(function(x, y, m, n)
@@ -204,29 +278,6 @@ dot_rtp <- function(Z, C, k=NULL, ...)
         1 - pgamma(log(qbeta(x, m + 1, n - m)) * m + y, m)
     },
     0, 1, Y, k, L)$va
-    c(list(P=P, Y=Y), ret)
-}
-
-
-#' @describeIn dot_sst
-#'
-#' Decorrelated Fisher's combined P-value test.
-#'
-#' @examples
-#'
-#' ## decorrelated Fisher's combined P-value chi-square test
-#' result <- dot_fisher(stt, sgm)
-#' print(result$Y)  # 58.44147
-#' print(result$P)  #  0.0002706851
-#' @export
-dot_fisher <- function(Z, C, ...)
-{
-    L <- length(Z)                      # number of statistics
-    ret <- dot(Z, C, ...)               # decorrelated two-tail P-values
-    P <- 1 - pchisq(ret$X^2, 1)
-    
-    Y <- -2 * sum(log(P))               # Fisher statistics
-    P <- 1 - pchisq(Y, 2 * L)           # summarized P-value
     c(list(P=P, Y=Y), ret)
 }
 
@@ -259,19 +310,19 @@ dot_fisher <- function(Z, C, ...)
 #' @export
 dot_tpm <- function(Z, C, tau=0.05, ...)
 {
-    L <- length(Z)                      # number of statistics
     if(is.null(tau))                    # k = L / 2 (default)
         tau <- 0.05
 
-    ret <- dot(Z, C, ...)               # decorrelated two-tail P-values
-    P <- 1 - pchisq(ret$X^2, 1)
+    ret <- dot(Z, C, ...)               # decorrelate
+    L <- ret$L                          # effective number of eigenvalues
+    P <- 1 - pchisq(ret$X^2, 1)         # decorrelated two-tail P-values
     tau <- min(tau, max(P))
 
     k <- sum(P <= tau)
     if(k == 0)
-        return(c(list(P=1, Y=1, k=k, ret)))
+        return(c(list(P=1, Y=1, k=k), ret))
     if(any(P == 0))
-        return(c(list(P=0, Y=1, k=k, ret)))
+        return(c(list(P=0, Y=1, k=k), ret))
 
     lw <- sum(log(P[P <= tau]))         # log(w), w = prod(p_i | p_i<=tau)
     
@@ -298,5 +349,5 @@ dot_tpm <- function(Z, C, tau=0.05, ...)
     P <- sum(exp(lpk + lpw))
     Y <- exp(lw)
     
-    c(list(P=P, Y=Y, k=k, ret))
+    c(list(P=P, Y=Y, k=k), ret)
 }
