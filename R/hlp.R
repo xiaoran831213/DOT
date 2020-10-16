@@ -23,7 +23,7 @@ dvt <- function(C, tol.cor=NULL, ...)
     
     C <- abs(C)
     C[upper.tri(C, TRUE)] <- 0
-    apply(C, 2, function(.) all(. < tol.cor))
+    apply(C, 2, function(.) all(. < 1 - tol.cor))
 }
 
 

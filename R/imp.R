@@ -1,34 +1,33 @@
 #' Impute missing genotype
 #'
-#' Fill missed genotype entries with guesses based on observed entries.
+#' Fill missing genotype calls with values guessed from non-missing ones.
 #'
-#' The most  naive approach to  fill the  missings in a  variant is to  use the
-#' average  of observed  entries  (\link{\code{imp_avg}}). Besides  simplicity,
-#' imputation by  average has  the advantage  of approximating  the correlation
-#' among test  statistics (i.e.,  Z-scores) when  the association  analysis was
-#' done with missing values unfilled, which is a common practices (i.e., GWAS).
-#' Therefore, one does not have to  re-run the assocation analysis with variant
-#' imputed  by average.   Also, the  correlation calculation  \link{\code{cst}}
-#' always uses \link{\code{imp_avg}}.
+#' The most naive way to impute the missing in a variant is to use the average
+#' of non-missing  ([imp_avg()]).  Besides  simplicity, imputation  by average
+#' has the  advantage of  approximating the  correlation among  test statistics
+#' (i.e.,  Z-scores)  when the  original  association  analysis was  done  with
+#' missing  values  unfilled,  which  is   a  common  practices  (i.e.,  GWAS).
+#' Therefore, one does not have to  re-run the association analysis with variant
+#' imputed by average.  The correlation calculator [cst()] also  relies on such
+#' naive approach if the users do not impute genotype.
 #'
-#' Mode \link{\code{imp_mod}} and median \link{\code{imp_med}} are as simple as
-#' the naive average  in that they only use information  in the target variant,
-#' but account  for the  fact that  allele dosage is  discrete and  not normal.
-#' However, one  must re-run the  assocation analysis with variants  imputed by
-#' mode or median, and use the  new Z-scores for decorrelated statistical tests
-#' (see \link{dot_sst}), or otherwise risking inflated type 1 error.
+#' The mode ([imp_mod()]) and median ([imp_med()]) based imputation account for
+#' the fact  that allele dosage  values are discrete and  non-normal.  However,
+#' one must re-run the association analysis with variants imputed other than the
+#' simple average, and  use the new Z-scores for decorrelated  tests of summary
+#' statistics (see [dot_sst]), or otherwise risking inflated type 1 error.
 #' 
-#' Advanced  approach such  as conditional  expectation (\link{\code{imp_cnd}})
-#' explore  the  relationship  between  variants and  borrow  information  from
-#' variants other  than the  target to  make a  guess.  The  sample correlation
-#' among variants imputed  this way is closer  to the true LD,  and may improve
-#' power.  Again, be adviced that one must re-run the association analysis with
-#' imputed variants to avoid inflated type I error.
+#' Advanced approach such as  conditional expectation ([imp_cnd()]) explore the
+#' relationship  between variants  and borrow  information from  variants other
+#' than the target when making  guesses.  The sample correlation among variants
+#' imputed this way is closer to the true LD, and may improve power.  Again, be
+#' advised that one must re-run  the association analysis with imputed variants
+#' to avoid inflated type I error.
 #' 
 #' @param g genotype matrix, one row per sample, and one column per variant.
 #' @param ... additional parameters.
 #'
-#' @return imputed genotype matrix.
+#' @return imputed genotype matrix, no missing entries.
 #'
 #' @name imp
 NULL
@@ -126,7 +125,7 @@ imp_cnd <- function(g, ...)
     x <- array(c(g == 0 & C, g == 1 & C, g == 2 & C), c(N, M, 3)) * 1
     
     ## g <- imp.mod(g)
-    c_0 <- Inf # consistancy
+    c_0 <- Inf # consistency
     w <- 1
 
     ## complete pairs, for each genotype {0, 1, 2}

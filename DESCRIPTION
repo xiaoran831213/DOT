@@ -21,3 +21,4 @@ Author:
 Maintainer: Xiaoran Tong <tongxia1@msu.edu>
 LazyData: true
 RoxygenNote: 7.1.1
+Roxygen: list(markdown = TRUE)

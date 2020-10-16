@@ -1,7 +1,7 @@
 #' Decorrelation by Orthogonal Transformation (DOT)
 #'
-#' \code{\link{dot}}  decorrelates   genetic  association  test   statistics  by
-#' special symmetric orthogonal transformation.
+#' [dot()]  decorrelates   genetic  association  test  statistics   by  special
+#' symmetric orthogonal transformation.
 #'
 #' @details
 #' Genetic  association studies  typically provide  per-variant test  statistics
@@ -9,29 +9,28 @@
 #' Z-scores are transformed to independent random variables, various methods can
 #' be applied to combine them and obtain SNP-set overall association.
 #' 
-#' \code{\link{dot}} uses  per-variant genetic association test  statistics and
-#' the correlation among them to decorrelate Z-scores.
+#' [dot()]  uses  per-variant  genetic  association  test  statistics  and  the
+#' correlation among them to decorrelate Z-scores.
 #'
 #' To estimate the  correlation among genetic association  test statistics, use
-#' \code{\link{cst}}.    If  P-values   and   estimated   effects  (i.e,   beta
-#' coefficients) are given instead of test statistics, \code{\link{zsc}} can be
-#' used to recover the test statistics (i.e., Z-scores).
+#' [cst()].  If  P-values and  estimated effects  (i.e, beta  coefficients) are
+#' given instead  of test statistics, [zsc()]  can be used to  recover the test
+#' statistics (i.e., Z-scores).
 #'
-#' A number statistics that combines de-correlated P-values are made available,
-#' see \code{\link{dot_sst}} for detailed.
+#' `tol.cor`:  variants  with  correlation  too close  to  1  are  considered
+#' collinear, and only one of them is retained to bring the LD matrix closer to
+#' full-rank.    The   default   high  correlation   tolerance   `tol.cor`   is
+#' `sqrt(.Machine$double.eps)`, bigger means less tolerable.
 #'
-#' Tow or more genetic variants with correlation higher than \code{1 - tol.cor}
-#' are  considered colinear,  and only  one them  is retained  to bring  the LD
-#' matrix  closer to  full-rank.   The default  tolerence  of high  correlation
-#' (\code{tol.cor})is \code{sqrt(.Machine$double.eps)}
-#'
-#' Eigenvalues  smaller than  \code{tol.egv} times  the largest  eigenvalue are
-#' treated as  non-positve and truncated  to make the  orthogonal tranformation
-#' \code{W} possible.  The default tolerence of small eigenvalue \code{tol.egv}
-#' is \code{sqrt(.Machine$double.eps)}.
+#' `tol.egv`: eigenvalues too close to 0  are treated as negative and truncated
+#' to  make  the  orthogonal  transformation `W`  possible.   The  default  low
+#' eigenvalue tolerance `tol.egv`  is `sqrt(.Machine$double.eps)`, bigger means
+#' less tolerable.
 #' 
-#' For details about DOT, see
-#' the reference below.
+#' A number statistics that combines de-correlated P-values are made available,
+#' see [dot_sst] for details.
+#'
+#' For details about DOT, see the reference below.
 #'
 #' @references
 #' \href{https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1007819}{
@@ -40,30 +39,30 @@
 #' Biology, 16(4), e1007819.}
 #'
 #' @param Z vector of association test statistics (i.e., Z-scores)
-#' @param C matrix of correlation among the association test statistics, as
-#'     obtained by \code{\link{cst}}
-#' @param tol.cor tolerence for correlation
-#' @param tol.egv tolerence for eigenvalues
+#' @param  C matrix of  correlation among  the association test  statistics, as
+#'     obtained by [cst()]
+#' @param tol.cor tolerance for high correlation
+#' @param tol.egv tolerance for low eigenvalue
 #' @param ... additional parameters
 #'
 #' @return
-#' a  list,
+#' a  list with
 #' \itemize{
-#' \item{\code{Z}:}{association test statistics, original.}
-#' \item{\code{X}:}{association test statistics, de-correlated.}
-#' \item{\code{W}:}{orthogonal transformation such that \code{X = WZ}.}
-#' \item{\code{M}:}{effective number of variants after breaking colinarity.}
-#' \item{\code{L}:}{effective number of eigenvalues after zeroing the negatives.}
+#' \item{`Z`:} {association test statistics, original.}
+#' \item{`X`:} {association test statistics, de-correlated.}
+#' \item{`W`:} {orthogonal transformation such that `X == W %*% Z`.}
+#' \item{`M`:} {effective number of variants after de-collinearity.}
+#' \item{`L`:} {effective number of eigenvalues after truncation.}
 #' }
 #' 
-#' @seealso \code{\link{cst}}, \code{\link{zsc}}, \code{\link{dot_sst}}
+#' @seealso [cst()], [zsc()], [dot_sst]
 #' @examples
 #' ## get genotype and covariate matrices
 #' gno <- readRDS(system.file("extdata", 'rs208294_gno.rds', package="dotgen"))
 #' cvr <- readRDS(system.file("extdata", 'rs208294_cvr.rds', package="dotgen"))
 #'
 #' ## estimate the correlation among association test statistics
-#' sgm <- cst(gno, cvr)$C
+#' sgm <- cst(gno, cvr)
 #'
 #' ## get the result of genetic association analysis (P-values and effects)
 #' res <- readRDS(system.file("extdata", 'rs208294_res.rds', package="dotgen"))
@@ -90,9 +89,9 @@ dot <- function(Z, C, tol.cor=NULL, tol.egv=NULL, ...)
     if(is.null(tol.egv))
         tol.egv <- sqrt(.Machine$double.eps)
 
-    ## trim colinear variants
+    ## trim collinear variants
     m <- dvt(C, tol.cor)
-    M <- sum(M)                      # effective number of variants
+    M <- sum(m)                      # effective number of variants
     C <- C[m, m]
     Z <- Z[m]
 
@@ -100,7 +99,7 @@ dot <- function(Z, C, tol.cor=NULL, tol.egv=NULL, ...)
     d <- nsp(C, eps=tol.egv, ...)
     W <- d$W                         # orthogonal transformation
     L <- d$L                         # effective number of eigenvalues
-
+    
     X <- W %*% Z                     # decorrelated statistics
 
     list(Z=Z, W=W, X=X, L=L, M=M)
@@ -108,8 +107,8 @@ dot <- function(Z, C, tol.cor=NULL, tol.egv=NULL, ...)
 
 #' Calculate Z-scores from P-values and estimated effects
 #'
-#' \code{\link{zsc}} recovers  Z-scores from  P-values and  corresponding effect
-#' directions (or beta coefficients) reported by a genetic association analysis.
+#' [zsc()] recovers Z-scores from  P-values and corresponding effect directions
+#' (or beta coefficients) reported by a genetic association analysis.
 #'
 #' @details
 #'
@@ -117,7 +116,7 @@ dot <- function(Z, C, tol.cor=NULL, tol.egv=NULL, ...)
 #' estimated effect (\eqn{\beta}) is used to recover the Z-score (\eqn{z}), that
 #' is, \eqn{z = sign(\beta) \Phi^{-1}(p/2)}.
 #'
-#' @seealso \code{\link{dot}}
+#' @seealso [dot()]
 #'
 #' @param P vector of P-values.
 #' @param BETA vector of effect directions or beta coefficients.
@@ -145,38 +144,30 @@ zsc <- function(P, BETA)
 #'
 #' @details
 #' When no covariates are present in per-variant association analyses, that is,
-#' \code{x==NULL},  correlation  among  test  statistics is  the  same  as  the
-#' correlation among variants, \code{cor(g)}.
+#' `x==NULL`, correlation among test statistics  is the same as the correlation
+#' among variants, `cor(g)`.
 #'
 #' With  covariates, correlation  among  test  statistics is  not  the same  as
-#' \code{cor(g)}. In this case, \code{\link{cst}} takes the generalized inverse
-#' of the entire correlation matrix, \code{corr(cbind(g, x))}, and then inverts
-#' back only the submtarix containing genotype variables, \code{g}.
+#' `cor(g)`. In this case, [cst()] takes  the generalized inverse of the entire
+#' correlation  matrix, `corr(cbind(g,  x))`, and  then inverts  back only  the
+#' submtarix containing genotype variables, `g`.
 #'
-#' Missed genotype calls are fill  with 'soft' (i.e., continuous) allele dosage
-#' values  in the  interval from  0 to  2, imputed  using information  from all
-#' non-missing entries in the genotype matrix.
-#'
-#' By default (\code{imp=0}), missed calls for each variant are filled with the
-#' average of non-missing entires; setting \code{imp=1} uses advance techniques
-#' based on expected allele count of one variant conditioned on other variants.
-#'
-#' The advance imputation (\code{imp=1})  improves statistical power in certian
-#' cases, but  we highly suggest  the user to  rerun the association  test with
-#' imputed genotype to avoid type I error.
+#' [cst()] fills missing values in each variant with the average of non-missing
+#' values in that same variant  (i.e., imputation by average, [imp_avg()]). See
+#' topic [imp] for  other techniques that may improve  power, but be
+#' advised  that, techniques  other than  the  average requires  to re-run  the
+#' association analysis with imputed variants,  to ensure the correlation among
+#' new statistics (i.e.,  Z-scores) and the correlation  among imputed variants
+#' are identical, otherwise the user risks  inflated type 1 error for some test
+#' of decorrelated summary statistics.
 #'
 #' @param  g matrix of  genotype, one row per  sample, one column  per variant,
-#'     missings allowed.
+#'     missing allowed.
 #' @param x matrix of covariates, one row per sample, no missing allowed.
-#' @param imp  imputation methods,  0=naive averge,  1=conditional expectation
-#'     (def=0).
 #'
-#' @return a list containing
-#' \itemize{
-#' \item{G}{imputed genotype matrix, no missing entreis}
-#' \item{C}{the correlation matrix \code{cor{G}}}
-#' }
+#' @return matrix of correlation among association test statistics
 #'
+#' @seealso [imp] [imp_avg()]
 #' @examples
 #' ## get genotype and covariate matrices
 #' gno <- readRDS(system.file("extdata", 'rs208294_gno.rds', package="dotgen"))
@@ -189,18 +180,14 @@ zsc <- function(P, BETA)
 #' ## with 2% missed calls
 #' g02 <- readRDS(system.file("extdata", 'rs208294_g02.rds', package="dotgen"))
 #' cvr <- readRDS(system.file("extdata", 'rs208294_cvr.rds', package="dotgen"))
-#' res <- cst(g02, cvr, imp=0)
-#' print(res$C[1:4, 1:4])
+#' res <- cst(g02, cvr)
+#' print(res[1:4, 1:4])
 #' 
 #' @export
-cst <- function(g, x=NULL, imp=0)
+cst <- function(g, x=NULL)
 {
-    ## impute missed calls
-    if(imp == 1)
-        imp <- imp.cxp
-    else
-        imp <- imp.avg
-    g <- imp(g)
+    ## impute missed calls by naive average
+    g <- imp_avg(g)
     
     if(is.null(x))
         r <- stats::cor(g)              # no covariate, use full cor
@@ -210,5 +197,5 @@ cst <- function(g, x=NULL, imp=0)
         i <- seq(ncol(x))               # index of covariates
         r <- stats::cov2cor(scp(r, i))  # cond cor
     }
-    list(G=g, C=r)
+    r
 }
