@@ -39,7 +39,9 @@ vignettes/*.pdf
 .Renviron
 
 # simulations on HPCC
-sim/*
+sim/R
+sim/run
+sim/dwn
 
 # R package manual genrated by devtools
 man/*
