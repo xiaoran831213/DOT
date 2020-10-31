@@ -1,33 +1,27 @@
-#' Impute missing genotype
+#' Impute missing genotypes
 #'
-#' Fill missing genotype calls with values guessed from non-missing ones.
+#' Impute missing genotype calls with values inferred from non-missing ones.
 #'
-#' The most naive way to impute the missing in a variant is to use the average
-#' of non-missing  ([imp_avg()]).  Besides  simplicity, imputation  by average
-#' has the  advantage of  approximating the  correlation among  test statistics
-#' (i.e.,  Z-scores)  when the  original  association  analysis was  done  with
-#' missing  values  unfilled,  which  is   a  common  practices  (i.e.,  GWAS).
-#' Therefore, one does not have to  re-run the association analysis with variant
-#' imputed by average.  The correlation calculator [cst()] also  relies on such
-#' naive approach if the users do not impute genotype.
-#'
-#' The mode ([imp_mod()]) and median ([imp_med()]) based imputation account for
-#' the fact  that allele dosage  values are discrete and  non-normal.  However,
-#' one must re-run the association analysis with variants imputed other than the
-#' simple average, and  use the new Z-scores for decorrelated  tests of summary
-#' statistics (see [dot_sst]), or otherwise risking inflated type 1 error.
+#' A seemingly naive way to impute a missing value is to use the average of all
+#' non-missing  values  per  variant, [imp_avg()].   Besides  simplicity,  this
+#' imputation by  average has  the advantage  of approximating  the correlation
+#' among  test  statistics  (i.e.,  Z-scores)  when  the  original  association
+#' analyses  were performed  with missing  values unfilled,  which is  a common
+#' practice.  This naive approach is the defualt for the correlation calculator
+#' [cst()].
 #' 
-#' Advanced approach such as  conditional expectation ([imp_cnd()]) explore the
-#' relationship  between variants  and borrow  information from  variants other
-#' than the target when making  guesses.  The sample correlation among variants
-#' imputed this way is closer to the true LD, and may improve power.  Again, be
-#' advised that one must re-run  the association analysis with imputed variants
-#' to avoid inflated type I error.
+#' An  advanced imputation  approach is  based on  the conditional  expectation
+#' method,  [imp_cnd()], that  explores the  relationship between  variants and
+#' borrows  information from  variants other  than the  target one  when making
+#' guesses.  The sample  correlation among variants imputed this  way is closer
+#' to the  true LD, and may  improve power.  However, after  this imupation one
+#' must  re-run  the  association  analyses  with  imputed  variants  to  avoid
+#' inflation in Type I error rates.
 #' 
 #' @param g genotype matrix, one row per sample, and one column per variant.
 #' @param ... additional parameters.
 #'
-#' @return imputed genotype matrix, no missing entries.
+#' @return imputed genotype matrix without any missing values.
 #'
 #' @name imp
 NULL
@@ -45,39 +39,11 @@ imp_avg <- function(g, ...)
     })
 }
 
-#' @describeIn imp
-#'
-#' imputation by median, re-run the association analysis with imputed genotype!
-imp_med <- function(g, ...)
-{
-    apply(g, 2L, function(x)
-    {
-        i <- which(is.na(x))
-        x[i] <- median(x[-i])
-        x
-    })
-}
-
-#' @describeIn imp
-#' 
-#' imputation by mode, re-run the association analysis with imputed genotype!
-imp_mod <- function(g, ...)
-{
-    apply(g, 2L, function(x)
-    {
-        i <- which(is.na(x))
-        u <- unique(x[-i])
-        a <- tabulate(match(x[-i], u))
-        x[i] <- rep(u[a == max(a)], l=length(i))
-        x
-    })
-}
 
 
 #' @describeIn imp
 #'
-#' imputation by conditional expectation,  re-run the association analysis with
-#' imputed genotype!
+#' imputation by conditional expectation
 imp_cnd <- function(g, ...)
 {
     N <- nrow(g); M <- ncol(g); Z <- is.na(g); C <- !Z

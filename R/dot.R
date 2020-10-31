@@ -17,20 +17,21 @@
 #' given instead  of test statistics, [zsc()]  can be used to  recover the test
 #' statistics (i.e., Z-scores).
 #'
-#' `tol.cor`:  variants  with  correlation  too close  to  1  are  considered
-#' collinear, and only one of them is retained to bring the LD matrix closer to
-#' full-rank.    The   default   high  correlation   tolerance   `tol.cor`   is
-#' `sqrt(.Machine$double.eps)`, bigger means less tolerable.
+#' `tol.cor`: variants  with correlation too close  to 1 in absolute  value are
+#' considered to be collinear  and only one of them will  be retained to ensure
+#' that  the  LD  matrix  is   full-rank.   The  maximum  value  for  tolerable
+#' correlation  is  1   -  `tol.cor`.  The  default  value   for  `tol.cor`  is
+#' `sqrt(.Machine$double.eps)`.
 #'
-#' `tol.egv`: eigenvalues too close to 0  are treated as negative and truncated
-#' to  make  the  orthogonal  transformation `W`  possible.   The  default  low
-#' eigenvalue tolerance `tol.egv`  is `sqrt(.Machine$double.eps)`, bigger means
-#' less tolerable.
+#' `tol.egv`: negative and close to  zero eigenvalues are truncated from matrix
+#'  `D` in `W = EDE'`. The corresponding  columns of `E` are also deleted. Note
+#'  the  the dimention  of the  square matrix  `W` does  not change  after this
+#'  truncation. See DOT publication in the  reference below for more details on
+#'  definitions  of `E`  and `D`  matrices.  The  default eigenvalue  tolerance
+#'  value is `sqrt(.Machine$double.eps)`.
 #' 
-#' A number statistics that combines de-correlated P-values are made available,
+#' A number of methods are available for combining de-correlated P-values,
 #' see [dot_sst] for details.
-#'
-#' For details about DOT, see the reference below.
 #'
 #' @references
 #' \href{https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1007819}{
@@ -38,20 +39,21 @@
 #' analysis by combining decorrelated association statistics. PLOS Computational
 #' Biology, 16(4), e1007819.}
 #'
-#' @param Z vector of association test statistics (i.e., Z-scores)
-#' @param  C matrix of  correlation among  the association test  statistics, as
-#'     obtained by [cst()]
-#' @param tol.cor tolerance for high correlation
-#' @param tol.egv tolerance for low eigenvalue
-#' @param ... additional parameters
+#' @param Z vector of association test statistics (i.e., Z-scores).
+#' @param C correlation matrix among the association test statistics, as
+#'     obtained by [cst()].
+#' @param w apply weights on variants before de-correlation.
+#' @param tol.cor tolerance threshold for the largest correlation absolute value.
+#' @param tol.egv tolerance threshold for the smallest eigenvalue.
+#' @param ... additional parameters.
 #'
 #' @return
 #' a  list with
 #' \itemize{
 #' \item{`Z`:} {association test statistics, original.}
 #' \item{`X`:} {association test statistics, de-correlated.}
-#' \item{`W`:} {orthogonal transformation such that `X == W %*% Z`.}
-#' \item{`M`:} {effective number of variants after de-collinearity.}
+#' \item{`W`:} {orthogonal transformation, such that `X = W %*% Z`.}
+#' \item{`M`:} {effective number of variants after de-correlation.}
 #' \item{`L`:} {effective number of eigenvalues after truncation.}
 #' }
 #' 
@@ -77,12 +79,12 @@
 #'
 #' ## sum of squares of decorrelated statistics is a chi-square
 #' ssq <- sum(result$X^2)
-#' pvl <- 1 - pchisq(ssq, df=length(stt))
+#' pvl <- 1 - pchisq(ssq, df=L)     # L is returned by dot()
 #'
-#' print(ssq)            # sum of square = 35.76306
+#' print(ssq)            # sum of squares = 35.76306
 #' print(pvl)            # chisq P-value =  0.001132132
 #' @export
-dot <- function(Z, C, tol.cor=NULL, tol.egv=NULL, ...)
+dot <- function(Z, C, w=NULL, tol.cor=NULL, tol.egv=NULL, ...)
 {
     if(is.null(tol.cor))
         tol.cor <- sqrt(.Machine$double.eps)
@@ -94,6 +96,7 @@ dot <- function(Z, C, tol.cor=NULL, tol.egv=NULL, ...)
     M <- sum(m)                      # effective number of variants
     C <- C[m, m]
     Z <- Z[m]
+    w <- w[m]
 
     ## get orthogonal transformation
     d <- nsp(C, eps=tol.egv, ...)
@@ -152,22 +155,27 @@ zsc <- function(P, BETA)
 #' correlation  matrix, `corr(cbind(g,  x))`, and  then inverts  back only  the
 #' submtarix containing genotype variables, `g`.
 #'
-#' [cst()] fills missing values in each variant with the average of non-missing
-#' values in that same variant  (i.e., imputation by average, [imp_avg()]). See
-#' topic [imp] for  other techniques that may improve  power, but be
-#' advised  that, techniques  other than  the  average requires  to re-run  the
-#' association analysis with imputed variants,  to ensure the correlation among
-#' new statistics (i.e.,  Z-scores) and the correlation  among imputed variants
-#' are identical, otherwise the user risks  inflated type 1 error for some test
-#' of decorrelated summary statistics.
+#' If Z-scores were calculated based on genotypes with some missing values, the
+#' correlation among test statistics will be  reduced by the amount that can be
+#' theoretically derived. It can be shown  that this reduced correlation can be
+#' calculated by imputing  the missing values with the  averages of non-missing
+#' values. Therefore, by default, [cst()]  fills missing values in each variant
+#' with  the  average  of  non-missing  values  in  that  same  variant  (i.e.,
+#' imputation  by  average, [imp_avg()]).  Other  imputation  methods are  also
+#' available (see topic [imp] for other techniques that may improve power), but
+#' note that  techniques other than the  imputation by average requires  one to
+#' re-run  the  association  analyses  with  imputed  variants  to  ensure  the
+#' correlation among new statistics (i.e.,  Z-scores) and the correlation among
+#' imputed variants are identical. Otherwise, Type  I error may be inflated for
+#' decorrelation-based methods.
 #'
-#' @param  g matrix of  genotype, one row per  sample, one column  per variant,
-#'     missing allowed.
-#' @param x matrix of covariates, one row per sample, no missing allowed.
+#' @param g matrix of  genotype, one row per  sample, one column  per variant,
+#'     missing values allowed.
+#' @param x matrix of covariates, one row per sample, no missing values allowed.
 #'
-#' @return matrix of correlation among association test statistics
+#' @return Correlation matrix among association test statistics.
 #'
-#' @seealso [imp] [imp_avg()]
+#' @seealso [imp], [imp_avg()]
 #' @examples
 #' ## get genotype and covariate matrices
 #' gno <- readRDS(system.file("extdata", 'rs208294_gno.rds', package="dotgen"))
@@ -177,7 +185,7 @@ zsc <- function(P, BETA)
 #' res <- cst(gno, cvr)
 #' print(res$C[1:4, 1:4])
 #'
-#' ## with 2% missed calls
+#' ## genotype matrix with 2% randomly missing data
 #' g02 <- readRDS(system.file("extdata", 'rs208294_g02.rds', package="dotgen"))
 #' cvr <- readRDS(system.file("extdata", 'rs208294_cvr.rds', package="dotgen"))
 #' res <- cst(g02, cvr)

@@ -76,26 +76,25 @@ nsp <- function(X, L=NULL, eps=NULL, ...)
 {
     if(is.null(eps))
         eps <- sqrt(.Machine$double.eps)
+
     ## eigen decomposition
-    . <- svd(X)
-    u <- .$u
-    v <- .$v
-    d <- .$d
-    
+    . <- eigen(X, TRUE)
+    u <- .$vectors
+    d <- .$values
+
     ## positive eigen values
     . <- d > d[1] * eps
     if(!all(.))
     {
         d <- d[  .]
         u <- u[, .]
-        v <- v[, .]
     }
-    L <- length(d)
+    L <- length(d)              # effective number of eigen
     
     ## square root
     d <- sqrt(1/d)
-    Y <- u %*% (d * t(v))       # U diag(d) V'
-    Y <- 0.5 * (Y + t(Y))
+    W <- u %*% (d * t(u))       # U diag(d) U'
+    W <- 0.5 * (W + t(W))
     
-    list(W=Y, L=L)
+    list(W=W, L=L)
 }

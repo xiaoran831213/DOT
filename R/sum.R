@@ -1,44 +1,45 @@
 #' Methods for combining decorrelated summary statistics
 #'
-#' Decorrelate and combine per-variant genetic association test statistics, `Z`
-#' (i.e., Z-scores), given the correlation matrix among them, `C`.
+#' Decorrelates and combines per-variant genetic association test statistics, `Z`,
+#'  given the correlation matrix among them, `C`.
 #'
 #' @details
 #' 
-#' These  functions  first call  `[dot()](Z,  C)`  to decorrelate  the  genetic
-#' association  test statistics  and then  provide various  options to  combine
-#' independent statistics or corresponding P-values into the overall statistics
-#' and P-value.
+#' These functions  first call [dot()]  to decorrelate the  genetic association
+#' test  statistics and  then provide  various options  to combine  independent
+#' statistics or corresponding P-values into the overall statistic and P-value.
 #'
-#' The two rank  truncated test [dot_art()], [dot_rtp()]  require an additional
-#' parameter `k` specifying  the number of smallest  (decorrelated) P-values to
-#' combine; by  default, `k` equals half  of the number of  effective variants.
-#' The  adaptive rank  truncation  method [dot_arta()]  searches  for the  most
-#' appropriate truncation values up to `k`.
+#' The two  rank truncated  tests (i.e.,  [dot_art()], [dot_rtp()])  require an
+#' additional parameter `k` that specifes the number of smallest (decorrelated)
+#' P-values to combine. By default, `k`  equals half of the number of variants.
+#' The adaptive  rank truncation  method, [dot_arta()], determines  the optimal
+#' truncation value between 1 and `k`.
 #'
-#' The truncated product method [dot_tpm()] combines P-values at least as small
-#' as `tau` (def=0.05).  If `tau` is  equal to 1, then [dot_tpm()] provides the
-#' same  result   as  [dot_fisher()]  (i.e.,  Fisher's   method  for  combining
-#' P-values). Similarly,  if `k`  is equal  to the total  number of  tests, the
-#' results   of  [dot_art()]   and  [dot_rtp()]   will  be   the  same   as  of
-#' [dot_fisher()].
+#' The truncated  product method,  [dot_tpm()], combines  P-values at  least as
+#' small as `tau` (0.05 by default).  If  `tau` is equal to 1, then [dot_tpm()]
+#' provides  the  same result  as  [dot_fisher()]  (i.e., Fisher's  method  for
+#' combining  P-values). Similarly,  if `k`  is equal  to the  total number  of
+#' tests, the results  of [dot_art()] and [dot_rtp()] will be  the same as that
+#' of [dot_fisher()].
 #'
-#' Reference \strong{a} details how to  combine decorrelated test statistics or
-#' P-values via [dot_art()], [dot_rtp()] and [dot_arta()]; reference \strong{b}
-#' details [dot_tpm()] and [dot_fisher()] methods.
+#' Reference  (\strong{a})  below  details  how to  combine  decorrelated  test
+#' statistics  or  P-values  via  [dot_art()],  [dot_rtp()]  and  [dot_arta()];
+#' reference (\strong{b}) details [dot_tpm()] method.
 #'
 #' @param Z vector of association test statistics (i.e., Z-scores).
 #' @param  C matrix of  correlation among the  test statistics, as  obtained by
 #'     [cst()].
-#' @param k consider `k` smallest (decorrelated) P-values.
+#' @param k combine `k` smallest (decorrelated) P-values.
+#' @param w apply weights to the variants before de-correlation.
 #'
 #' @param ... additional parameters
 #'
 #' @return a list of
 #' \itemize{
+#' \item{`w`:} {weights on variants before decorrelation.}
 #' \item{`X`:} {decorrelated  association statistics.}
-#' \item{`W`:} {orthogonal transformation, such that `X == WZ`.}
-#' \item{`Y`:} {the overall combined statistics.}
+#' \item{`W`:} {orthogonal transformation, such that `X = W%*%Z`.}
+#' \item{`Y`:} {the overall combined statistic.}
 #' \item{`P`:} {the P-value corresponding to \code{Y}.}
 #' }
 #'
@@ -51,8 +52,7 @@
 #' (b) \href{https://onlinelibrary.wiley.com/doi/abs/10.1002/gepi.0042}{Zaykin,
 #' D.    V.,   Zhivotovsky,    L.     A.,   Westfall,    P.    H.,   &    Weir,
 #' B. S.  (2002). _Truncated  product method  for combining  P‐values._ Genetic
-#' Epidemiology:  The   Official  Publication  of  the   International  Genetic
-#' Epidemiology Society, 22(2), 170-185.}
+#' Epidemiology, 22(2), 170-185.}
 #'
 #' @seealso [dot()]
 #' 
@@ -73,11 +73,11 @@ NULL
 #' ## decorrelated chi-square test
 #' result <- dot_chisq(stt, sgm)
 #' print(result$Y)  # 37.2854
-#' print(result$P)  #  0.0003736988
+#' print(result$P)  # 0.0003736988
 #' @export
-dot_chisq <- function(Z, C, ...)
+dot_chisq <- function(Z, C, w=NULL, ...)
 {
-    ret <- dot(Z, C, ...)        # decorrelate
+    ret <- dot(Z, C, w, ...)     # decorrelate
     L <- ret$L                   # effective number of eigenvalues
     Y <- sum(ret$X^2)            # sum of squares
     P <- 1 - pchisq(Y, L)        # a single p-value
@@ -87,18 +87,18 @@ dot_chisq <- function(Z, C, ...)
 
 #' @describeIn dot_sst
 #'
-#' Decorrelated Fisher's combined P-value test.
+#' decorrelated Fisher's combined P-value test.
 #'
 #' @examples
 #'
 #' ## decorrelated Fisher's combined P-value chi-square test
 #' result <- dot_fisher(stt, sgm)
 #' print(result$Y)  # 58.44147
-#' print(result$P)  #  0.0002706851
+#' print(result$P)  # 0.0002706851
 #' @export
-dot_fisher <- function(Z, C, ...)
+dot_fisher <- function(Z, C, w=NULL, ...)
 {
-    ret <- dot(Z, C, ...)               # decorrelate
+    ret <- dot(Z, C, w, ...)            # decorrelate
     L <- ret$L                          # effective number of eigenvalues
     P <- 1 - pchisq(ret$X^2, df=1)      # decorrelated two-tail P-values
     Y <- -2 * sum(log(P))               # Fisher statistics
@@ -115,11 +115,11 @@ dot_fisher <- function(Z, C, ...)
 #' ## decorrelated augmented rank truncated (ART) test.
 #' result <- dot_art(stt, sgm, k=6)
 #' print(result$Y)  # 22.50976
-#' print(result$P)  #  0.0006704994
+#' print(result$P)  # 0.0006704994
 #' @export
-dot_art <- function(Z, C, k=NULL, ...)
+dot_art <- function(Z, C, k=NULL, w=NULL, ...)
 {
-    ret <- dot(Z, C, ...)               # decorrelate
+    ret <- dot(Z, C, w, ...)            # decorrelate
     L <- ret$L                          # effective number of eigenvalues
     M <- ret$M                          # effective number of variants
     P <- 1 - pchisq(ret$X^2, df=1)      # decorrelated two-tail P-values
@@ -153,23 +153,23 @@ dot_art <- function(Z, C, k=NULL, ...)
 #' decorrelated Augmented Rank Truncated Adaptive (ARTA) test.
 #'
 #' @return
-#' for Augmented Rank Truncated Adaptive (ARTA) Test,
+#' for Augmented Rank Truncated Adaptive (ARTA) test,
 #' \itemize{
-#' \item{k:} {the number of decorrelated P-values adaptively picked.}}
+#' \item{k:} {the number of decorrelated P-values that were adaptively picked.}}
 #'
-#' @param w weight assigned to cumulative statistics, default to 1.
+#' @param w weight assigned to partial sums in ARTA implementation; default is 1.
 #' 
 #' @examples
 #'
 #' ## decorrelated Augmented Rank Truncated Adaptive (ARTA) test
 #' result <- dot_arta(stt, sgm, k=6)
 #' print(result$Y)  # -1.738662
-#' print(result$k)  #  5 smallest P-value retained
+#' print(result$k)  #  5 smallest P-values are retained
 #' print(result$P)  #  0.003165 (varies)
 #' @export
 dot_arta <- function(Z, C, k=NULL, w=NULL, ...)
 {
-    ret <- dot(Z, C, ...)               # decorrelate
+    ret <- dot(Z, C, w, ...)            # decorrelate
     L <- ret$L                          # effective number of eigenvalues
     M <- ret$M                          # effective number of variants
     P <- 1 - pchisq(ret$X^2, df=1)      # decorrelated two-tail P-values
@@ -217,18 +217,18 @@ dot_arta <- function(Z, C, k=NULL, w=NULL, ...)
 
 #' @describeIn dot_sst
 #'
-#' Decorrelated Rank Truncated Product (RTP) test.
+#' decorrelated Rank Truncated Product (RTP) test.
 #'
 #' @examples
 #'
 #' ## decorrelated Rank Truncated Product (RTP)
 #' result <- dot_rtp(stt, sgm, k=6)
 #' print(result$Y)  # 22.6757
-#' print(result$P)  #  0.0007275518
+#' print(result$P)  # 0.0007275518
 #' @export
-dot_rtp <- function(Z, C, k=NULL, ...)
+dot_rtp <- function(Z, C, k=NULL, w=NULL, ...)
 {
-    ret <- dot(Z, C, ...)               # decorrelate
+    ret <- dot(Z, C, w, ...)            # decorrelate
     L <- ret$L                          # effective number of eigenvalues
     M <- ret$M                          # effective number of variants
     P <- 1 - pchisq(ret$X^2, df=1)      # decorrelated two-tail P-values
@@ -249,7 +249,7 @@ dot_rtp <- function(Z, C, k=NULL, ...)
 
 #' @describeIn dot_sst
 #'
-#' Decorrelated Truncated Product Method (TPM) test.
+#' decorrelated Truncated Product Method (TPM) test.
 #'
 #' @examples
 #'
@@ -259,18 +259,18 @@ dot_rtp <- function(Z, C, k=NULL, ...)
 #' print(result$k)  #  6 P-values <= tau
 #' print(result$P)  #  0.0007954961
 #'
-#' @param tau combine (decorrelated) P-values no large than tau (def=0.05).
+#' @param tau combine (decorrelated) P-values no large than tau; default is 0.05.
 #' @return
 #' for Truncated Product Method (TPM),
 #' \itemize{
 #' \item{k:} {the number of decorrelated P-values \eqn{\le} \code{tau}.}}
 #' @export
-dot_tpm <- function(Z, C, tau=0.05, ...)
+dot_tpm <- function(Z, C, tau=0.05, w=NULL, ...)
 {
     if(is.null(tau))                    # k = L / 2 (default)
         tau <- 0.05
 
-    ret <- dot(Z, C, ...)               # decorrelate
+    ret <- dot(Z, C, w, ...)            # decorrelate
     L <- ret$L                          # effective number of eigenvalues
     P <- 1 - pchisq(ret$X^2, 1)         # decorrelated two-tail P-values
     tau <- min(tau, max(P))
