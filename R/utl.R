@@ -1,3 +1,5 @@
+`%||%` <- function(x, v) if(is.null(x)) v else x
+
 #' Create data frame
 #'
 #' A wrapper  for R \code{data.frame},  which ensures that string  variables not

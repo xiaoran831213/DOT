@@ -30,7 +30,6 @@
 #' @param  C matrix of  correlation among the  test statistics, as  obtained by
 #'     [cst()].
 #' @param k combine `k` smallest (decorrelated) P-values.
-#' @param w apply weights to the variants before de-correlation.
 #'
 #' @param ... additional parameters
 #'
@@ -75,10 +74,11 @@ NULL
 #' print(result$Y)  # 37.2854
 #' print(result$P)  # 0.0003736988
 #' @export
-dot_chisq <- function(Z, C, w=NULL, ...)
+dot_chisq <- function(Z, C, ...)
 {
-    ret <- dot(Z, C, w, ...)     # decorrelate
+    ret <- dot(Z, C, ...)        # decorrelate
     L <- ret$L                   # effective number of eigenvalues
+
     Y <- sum(ret$X^2)            # sum of squares
     P <- 1 - pchisq(Y, L)        # a single p-value
     c(list(P=P, Y=Y), ret)
@@ -96,11 +96,12 @@ dot_chisq <- function(Z, C, w=NULL, ...)
 #' print(result$Y)  # 58.44147
 #' print(result$P)  # 0.0002706851
 #' @export
-dot_fisher <- function(Z, C, w=NULL, ...)
+dot_fisher <- function(Z, C, ...)
 {
-    ret <- dot(Z, C, w, ...)            # decorrelate
+    ret <- dot(Z, C, ...)               # decorrelate
     L <- ret$L                          # effective number of eigenvalues
     P <- 1 - pchisq(ret$X^2, df=1)      # decorrelated two-tail P-values
+
     Y <- -2 * sum(log(P))               # Fisher statistics
     P <- 1 - pchisq(Y, 2 * L)           # summarized P-value
     c(list(P=P, Y=Y), ret)
@@ -117,9 +118,9 @@ dot_fisher <- function(Z, C, w=NULL, ...)
 #' print(result$Y)  # 22.50976
 #' print(result$P)  # 0.0006704994
 #' @export
-dot_art <- function(Z, C, k=NULL, w=NULL, ...)
+dot_art <- function(Z, C, k=NULL, ...)
 {
-    ret <- dot(Z, C, w, ...)            # decorrelate
+    ret <- dot(Z, C, ...)               # decorrelate
     L <- ret$L                          # effective number of eigenvalues
     M <- ret$M                          # effective number of variants
     P <- 1 - pchisq(ret$X^2, df=1)      # decorrelated two-tail P-values
@@ -169,7 +170,7 @@ dot_art <- function(Z, C, k=NULL, w=NULL, ...)
 #' @export
 dot_arta <- function(Z, C, k=NULL, w=NULL, ...)
 {
-    ret <- dot(Z, C, w, ...)            # decorrelate
+    ret <- dot(Z, C, ...)               # decorrelate
     L <- ret$L                          # effective number of eigenvalues
     M <- ret$M                          # effective number of variants
     P <- 1 - pchisq(ret$X^2, df=1)      # decorrelated two-tail P-values
@@ -226,9 +227,9 @@ dot_arta <- function(Z, C, k=NULL, w=NULL, ...)
 #' print(result$Y)  # 22.6757
 #' print(result$P)  # 0.0007275518
 #' @export
-dot_rtp <- function(Z, C, k=NULL, w=NULL, ...)
+dot_rtp <- function(Z, C, k=NULL, ...)
 {
-    ret <- dot(Z, C, w, ...)            # decorrelate
+    ret <- dot(Z, C, ...)               # decorrelate
     L <- ret$L                          # effective number of eigenvalues
     M <- ret$M                          # effective number of variants
     P <- 1 - pchisq(ret$X^2, df=1)      # decorrelated two-tail P-values
@@ -265,12 +266,12 @@ dot_rtp <- function(Z, C, k=NULL, w=NULL, ...)
 #' \itemize{
 #' \item{k:} {the number of decorrelated P-values \eqn{\le} \code{tau}.}}
 #' @export
-dot_tpm <- function(Z, C, tau=0.05, w=NULL, ...)
+dot_tpm <- function(Z, C, tau=0.05, ...)
 {
     if(is.null(tau))                    # k = L / 2 (default)
         tau <- 0.05
 
-    ret <- dot(Z, C, w, ...)            # decorrelate
+    ret <- dot(Z, C, ...)               # decorrelate
     L <- ret$L                          # effective number of eigenvalues
     P <- 1 - pchisq(ret$X^2, 1)         # decorrelated two-tail P-values
     tau <- min(tau, max(P))
