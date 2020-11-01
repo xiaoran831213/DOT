@@ -11,7 +11,7 @@
 #' If one  draw multivariate normal  from the  LD matrix (mvn=1),  the genotype
 #' will have continuouse values instead of {0,  1, 2}, and each SNP is centered
 #' at mu=0.
-sim <- function(N=5e2, M=20, naf=.1, cof=cor.std, hsq=.01, frq=.1, msk=1, times=5e2, ...)
+sim <- function(N=5e2, M=20, naf=.1, cof=cor.std, hsq=.01, frq=.1, msk=1, wgt=0, times=5e2, ...)
 {
     arg <- get.arg()
     arg$times <- NULL
@@ -24,12 +24,14 @@ sim <- function(N=5e2, M=20, naf=.1, cof=cor.std, hsq=.01, frq=.1, msk=1, times=
     {
         cat(sprintf("iter = %4d, ", i))
         dat <- try.gen(N, M, NAF=naf, hsq=hsq, frq=frq, msk=msk, ...)
-        flood(dat)
-
+        flood(dat) # gmx, tld, wgt, ...
+        
         ldm <- cof(gmx, tld)
         r <- list()
-        r[['dot_ch2']] <- dot_chisq(zsc, ldm, ...)
-        r[['dot_fsh']] <- dot_fisher(zsc, ldm, ...)
+        r[['uch']] <- dot_chisq(zsc, ldm, w=NL, ...)
+        ## r[['wch']] <- dot_chisq(zsc, ldm, w=wgt, ...)
+        r[['ufs']] <- dot_fisher(zsc, ldm, w=NL,  ...)
+        ## r[['wfs']] <- dot_fisher(zsc, ldm, w=wgt, ...)
         ## r['dot_tpm'] <- dot_tpm(zsc, ldm)$P
         ## r[['dot_art']] <- dot_art(zsc, ldm, k=M, ...)
         ## r[['dot_arta']] <- dot_arta(zsc, ldm, k=M, ...)

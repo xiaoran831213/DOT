@@ -30,7 +30,7 @@ mra <- function(y, g, int=1, ...)
 }
 
 #' test of the sum of squares
-tsq <- function(Z, C, d=NULL, eps=NULL, ...)
+tsq <- function(Z, C, eps=NULL, ...)
 {
     if(is.null(eps))
         eps <- sqrt(.Machine$double.eps)

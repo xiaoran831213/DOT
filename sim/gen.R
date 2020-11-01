@@ -74,7 +74,7 @@ get.gmx <- function(N=5e2, M=5, gno=0, NAF=.1, MAF=.04, psd=NULL, ...)
         if(NCOL(gmx) < M)
         {
             P <- min(P + M - NCOL(gmx), m17)
-            ## cat("P = ", P, "\n", sep="")
+            cat("P = ", P, "\n", sep="")
             next
         }
 
@@ -113,11 +113,12 @@ get.gmx <- function(N=5e2, M=5, gno=0, NAF=.1, MAF=.04, psd=NULL, ...)
 #'
 #' @param frq: fraction of casual variants;
 #' @param hsq: h^2, the desired heritability.
-get.phe <- function(gmx, frq=.1, hsq=.1)
+get.phe <- function(gmx, frq=.1, hsq=.1, wgt=0, ...)
 {
     N <- nrow(gmx)
     M <- ncol(gmx)
-
+    wgt <- if(wgt) runif(M) else rep(1, M)
+    
     if(hsq > 0 && frq > 0) # genetic effect exists
     {
         ## the number of casual variants
@@ -125,6 +126,7 @@ get.phe <- function(gmx, frq=.1, hsq=.1)
         
         ## effect sizes (0 for non-casual variants)
         b <- rnorm(M, 0, 1) * sample(c(rep(1, Q), rep(0, M - Q)))
+        b <- b * wgt
         
         ## genetic effect vector
         gvt <- drop(gmx %*% b)
@@ -146,7 +148,7 @@ get.phe <- function(gmx, frq=.1, hsq=.1)
     ## genetic effect + noise, standardized to mu=0, var=1
     phe <- gvt + nvt + 1
     ## phe <- as.vector(scale(gvt + nvt))
-    list(phe=phe, msk=msk)
+    list(phe=phe, msk=msk, wgt=wgt)
 }
 
 #' GWAS
@@ -185,25 +187,28 @@ get.gwa <- function(y, g, int=1, ...)
 try.gen <- function(N=500, M=10, hsq=.1, frq=.1, msk=0, ...)
 {
     gmx <- get.gmx(N, M, ...)
-    phe <- get.phe(gmx$gmx, frq, hsq)
+    phe <- get.phe(gmx$gmx, frq, hsq, ...)
 
     ## present incomplete data to competing methods
     g <- gmx$obs
     l <- gmx$ldm
+    w <- phe$wgt
 
     ## present non-effective variants
     if(msk)
     {
         g <- g[, phe$msk, drop=FALSE]
         l <- l[phe$msk, phe$msk, drop=FALSE]
+        w <- w[phe$msk]
     }
 
     ## GWAS
     y <- phe$phe
     gwa <- get.gwa(y, g, ...)
-
+    
     list(gmx=g,       # genotype matrix, with NA(s)
          rsp=y,       # response variable
          tld=l,       # true LD
+         wgt=w,       # weights
          zsc=gwa$Z, pvl=gwa$P)
 }
