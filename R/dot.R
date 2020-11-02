@@ -42,7 +42,6 @@
 #' @param Z vector of association test statistics (i.e., Z-scores).
 #' @param C correlation matrix among the association test statistics, as
 #'     obtained by [cst()].
-#' @param w apply weights on variants before de-correlation.
 #' @param tol.cor tolerance threshold for the largest correlation absolute value.
 #' @param tol.egv tolerance threshold for the smallest eigenvalue.
 #' @param ... additional parameters.
@@ -96,7 +95,6 @@ dot <- function(Z, C, w=NULL, tol.cor=NULL, tol.egv=NULL, ...)
     M <- sum(m)                      # effective number of variants
     C <- C[m, m]
     Z <- Z[m]
-    w <- w[m]
 
     ## get orthogonal transformation
     d <- nsp(C, eps=tol.egv, ...)
