@@ -30,18 +30,24 @@ mra <- function(y, g, int=1, ...)
 }
 
 #' test of the sum of squares
-tsq <- function(Z, C, eps=NULL, ...)
+tsq <- function(Z, C, w=NULL, eps=NULL, ...)
 {
     if(is.null(eps))
         eps <- sqrt(.Machine$double.eps)
-    S <- sum(Z^2) # sum square
+    L <- length(Z)
+    
+    if(!is.null(w))
+    {
+        Z <- Z * w
+        C <- t(w * C) * w
+    }
 
+    Y <- sum(Z^2) # sum square
     ## chi-square mixture
     W <- eigen(C, TRUE, TRUE)$value
-    L <- length(Z)
     egv <- sum(W > eps)
-    P <- imhof(S, W, delta=rep(0, length(Z)))$Qq
-    list(Z=Z, C=C, W=W, Y=S, P=P, L=L)
+    P <- imhof(Y, W, delta=rep(0, L))$Qq
+    list(Z=Z, C=C, W=W, Y=Y, P=P, L=L)
 }
 
 #' False Discovery Rate

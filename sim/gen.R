@@ -113,11 +113,11 @@ get.gmx <- function(N=5e2, M=5, gno=0, NAF=.1, MAF=.04, psd=NULL, ...)
 #'
 #' @param frq: fraction of casual variants;
 #' @param hsq: h^2, the desired heritability.
-get.phe <- function(gmx, frq=.1, hsq=.1, wgt=0, ...)
+get.phe <- function(gmx, frq=.1, hsq=.1, cfs=NULL, ...)
 {
     N <- nrow(gmx)
     M <- ncol(gmx)
-    wgt <- if(wgt) runif(M) else rep(1, M)
+    R <- cor(gmx)
     
     if(hsq > 0 && frq > 0) # genetic effect exists
     {
@@ -125,23 +125,30 @@ get.phe <- function(gmx, frq=.1, hsq=.1, wgt=0, ...)
         Q <- max(1, floor(M * frq))
         
         ## effect sizes (0 for non-casual variants)
-        b <- rnorm(M, 0, 1) * sample(c(rep(1, Q), rep(0, M - Q)))
-        b <- b * wgt
-        
+        eft <- sample(c(rep(1, Q), rep(0, M - Q)))
+        if(is.null(cfs))
+            b <- eft * rnorm(M, 0, 1) * eft
+        else
+            b <- eft * cfs
+
+        ## expected z-score as the correct weight
+        wgt <- M * (c(b %*% R) / c(sqrt(b %*% R %*% b + 1)))
+        ## wgt <- (c(b %*% R) / c(sqrt(b %*% R %*% b + 1)))^2
+
         ## genetic effect vector
         gvt <- drop(gmx %*% b)
         
         gvr <- var(gvt)            # variance of genetic effect
         nvr <- gvr / hsq - gvr     # variance of noise
-        msk <- b == 0              # mask ineffective variants
+        msk <- !eft                # mask ineffective variants
     }
     else
     {
         gvt <- 0.0          # no genotype effect
         nvr <- 1.0          # pure noise
         msk <- rep(TRUE, M) # mask ineffective variants
+        wgt <- rep(1, M)
     }
-    
     ## noise vector
     nvt <- rnorm(N, 0, sqrt(nvr))
     
@@ -211,4 +218,25 @@ try.gen <- function(N=500, M=10, hsq=.1, frq=.1, msk=0, ...)
          tld=l,       # true LD
          wgt=w,       # weights
          zsc=gwa$Z, pvl=gwa$P)
+}
+
+
+try.gwa <- function(N=500, times=1e3, ...)
+{
+    gmx <- get.gmx(N, 2, NAF=0.0, up=.95, psd=1e-8, ...)
+    G <- scale(gmx$obs)
+    X <- cbind(G, G[, 1]^2, G[, 2]^2, G[, 1] * G[, 2])
+    C <- cor(X)
+    b <- c(0, 0, 0, 0, 1)
+
+    Z <- list()
+    for(i in seq(times))
+    {
+        y <- get.phe(X, cfs=b, ...)$phe
+        a <- get.gwa(y, G, 1)
+        Z[[i]] <- a$Z
+    }
+    Z <- do.call(rbind, Z)
+
+    list(X=X, G=G, Z=Z, C=C)
 }

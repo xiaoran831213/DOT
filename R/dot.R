@@ -24,8 +24,8 @@
 #' `sqrt(.Machine$double.eps)`.
 #'
 #' `tol.egv`: negative and close to  zero eigenvalues are truncated from matrix
-#'  `D` in `W = EDE'`. The corresponding  columns of `E` are also deleted. Note
-#'  the  the dimention  of the  square matrix  `W` does  not change  after this
+#'  `D` in `H = EDE'`. The corresponding  columns of `E` are also deleted. Note
+#'  the  the dimention  of the  square matrix  `H` does  not change  after this
 #'  truncation. See DOT publication in the  reference below for more details on
 #'  definitions  of `E`  and `D`  matrices.  The  default eigenvalue  tolerance
 #'  value is `sqrt(.Machine$double.eps)`.
@@ -51,7 +51,7 @@
 #' \itemize{
 #' \item{`Z`:} {association test statistics, original.}
 #' \item{`X`:} {association test statistics, de-correlated.}
-#' \item{`W`:} {orthogonal transformation, such that `X = W %*% Z`.}
+#' \item{`H`:} {orthogonal transformation, such that `X = H %*% Z`.}
 #' \item{`M`:} {effective number of variants after de-correlation.}
 #' \item{`L`:} {effective number of eigenvalues after truncation.}
 #' }
@@ -74,7 +74,7 @@
 #' ## decorrelate Z-scores by DOT
 #' result <- dot(stt, sgm)
 #' print(result$X)          # decorrelated statistics
-#' print(result$W)          # orthogonal transformation
+#' print(result$H)          # orthogonal transformation
 #'
 #' ## sum of squares of decorrelated statistics is a chi-square
 #' ssq <- sum(result$X^2)
@@ -83,29 +83,26 @@
 #' print(ssq)            # sum of squares = 35.76306
 #' print(pvl)            # chisq P-value =  0.001132132
 #' @export
-dot <- function(Z, C, w=NULL, tol.cor=NULL, tol.egv=NULL, ...)
+dot <- function(Z, C, tol.cor=NULL, tol.egv=NULL, ...)
 {
     if(is.null(tol.cor))
         tol.cor <- sqrt(.Machine$double.eps)
     if(is.null(tol.egv))
         tol.egv <- sqrt(.Machine$double.eps)
-    if(is.null(w))
-        w <- rep(1, length(Z))
 
     ## trim collinear variants
     m <- dvt(C, tol.cor)
     M <- sum(m)                      # effective number of variants
     C <- C[m, m]
     Z <- Z[m]
-    w <- w[m]
     
     ## get orthogonal transformation
     d <- nsp(C, eps=tol.egv, ...)
-    W <- d$W                         # orthogonal transformation
+    H <- d$H                         # orthogonal transformation
     L <- d$L                         # effective number of eigenvalues
-    X <- W %*% (Z  * w)                    # decorrelated statistics
+    X <- drop(H %*% Z)               # decorrelated statistics
     
-    list(Z=Z, W=W, X=X, L=L, M=M)
+    list(Z=Z, H=H, X=X, L=L, M=M)
 }
 
 #' Calculate Z-scores from P-values and estimated effects

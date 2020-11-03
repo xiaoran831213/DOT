@@ -23,20 +23,22 @@ sim <- function(N=5e2, M=20, naf=.1, cof=cor.std, hsq=.01, frq=.1, msk=1, wgt=0,
     for(i in seq(times))
     {
         cat(sprintf("iter = %4d, ", i))
-        dat <- try.gen(N, M, NAF=naf, hsq=hsq, frq=frq, msk=msk, ...)
+        dat <- try.gen(N, M, NAF=naf, hsq=hsq, frq=frq, msk=msk, wgt=wgt, ...)
         flood(dat) # gmx, tld, wgt, ...
         
         ldm <- cof(gmx, tld)
         r <- list()
+        r[['wch']] <- dot_chisq(zsc, ldm, w=wgt, abs=0, ...)
+        r[['ach']] <- dot_chisq(zsc, ldm, w=wgt, abs=1, ...)
         r[['uch']] <- dot_chisq(zsc, ldm, w=NL, ...)
-        ## r[['wch']] <- dot_chisq(zsc, ldm, w=wgt, ...)
-        r[['ufs']] <- dot_fisher(zsc, ldm, w=NL,  ...)
+        ## r[['ufs']] <- dot_fisher(zsc, ldm, w=NL,  ...)
         ## r[['wfs']] <- dot_fisher(zsc, ldm, w=wgt, ...)
         ## r['dot_tpm'] <- dot_tpm(zsc, ldm)$P
         ## r[['dot_art']] <- dot_art(zsc, ldm, k=M, ...)
         ## r[['dot_arta']] <- dot_arta(zsc, ldm, k=M, ...)
         ## r[['dot_rtp']] <- dot_rtp(zsc, ldm, k=M, ...)
-        r[['tsq']] <- tsq(zsc, ldm, ...)
+        r[['wtq']] <- tsq(zsc, ldm, w=wgt, ...)
+        r[['utq']] <- tsq(zsc, ldm, w=NL, ...)
         ## r['mra'] <- mra(rsp, gmx)$P
         ## r['fdr'] <- fdr(pvl)$P
         ## r['bon'] <- bon(pvl)$P

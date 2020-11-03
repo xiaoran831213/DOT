@@ -74,13 +74,30 @@ NULL
 #' print(result$Y)  # 37.2854
 #' print(result$P)  # 0.0003736988
 #' @export
-dot_chisq <- function(Z, C, ...)
+dot_chisq <- function(Z, C, w=NULL, abs=0, ...)
 {
     ret <- dot(Z, C, ...)        # decorrelate
+    X <- ret$X
+    H <- ret$H
     L <- ret$L                   # effective number of eigenvalues
-
-    Y <- sum(ret$X^2)            # sum of squares
-    P <- 1 - pchisq(Y, L)        # a single p-value
+    M <- ret$M
+    if(!is.null(w))
+    {
+        if(abs)
+            w <- drop(abs(H) %*% w[1:M])  # new weights
+        else
+            w <- drop(H %*% w[1:M])
+        X <- X * w               # new X, correlated again
+        ## eig_val of diag(w) %*% diag(L) %*% diag(w)
+        l <- sort(w^2, TRUE)
+        Y <- sum(X^2)
+        P <- davies(Y, l)$Qq
+    }
+    else
+    {
+        Y <- sum(X^2)         # sum of squares
+        P <- 1 - pchisq(Y, L) # a single p-value
+    }
     c(list(P=P, Y=Y), ret)
 }
 
