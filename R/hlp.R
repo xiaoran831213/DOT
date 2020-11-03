@@ -93,8 +93,8 @@ nsp <- function(X, L=NULL, eps=NULL, ...)
     
     ## square root
     d <- sqrt(1/d)
-    W <- u %*% (d * t(u))       # U diag(d) U'
-    W <- 0.5 * (W + t(W))
+    H <- u %*% (d * t(u))       # U diag(d) U'
+    H <- 0.5 * (H + t(H))
     
-    list(W=W, L=L)
+    list(H=H, L=L)
 }
