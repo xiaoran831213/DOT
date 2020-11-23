@@ -39,6 +39,24 @@ dvt <- function(C, tol.cor=NULL, ...)
 #' @param X the whole matrix
 #' @param C mask or index of the target block
 #' @return the Schur complement of block C of matrix X
+#'
+#' @examples
+#' ## get genotype and covariate matrices
+#' gno <- readRDS(system.file("extdata", 'rs208294_gno.rds', package="dotgen"))
+#' cvr <- readRDS(system.file("extdata", 'rs208294_cvr.rds', package="dotgen"))
+#' 
+#' ## overall correlation is a 56 x 56 positive definite matrix
+#' X <- cor(cbind(gno, cvr))
+#'
+#' ## Schur complement for the covariate block
+#' C <- 1:ncol(cvr) + ncol(gno)      # block of covariate
+#' A <- 1:ncol(gno)                  # block of genotype
+#' res1 <- solve(solve(X)[A, A])     # method 1
+#' res2 <- scp(X, C)                 # method 2
+#'
+#' ## check equality
+#' stopifnot(all.equal(res1, res2))  # must be TRUE
+#' 
 #' @noRd
 scp <- function(X, C)
 {

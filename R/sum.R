@@ -35,22 +35,21 @@
 #'
 #' @return a list of
 #' \itemize{
-#' \item{`w`:} {weights on variants before decorrelation.}
 #' \item{`X`:} {decorrelated  association statistics.}
-#' \item{`W`:} {orthogonal transformation, such that `X = W%*%Z`.}
+#' \item{`H`:} {orthogonal transformation, such that `X = H %*% Z`.}
 #' \item{`Y`:} {the overall combined statistic.}
 #' \item{`P`:} {the P-value corresponding to \code{Y}.}
 #' }
 #'
 #' @references
-#' (a)    \href{https://www.frontiersin.org/articles/10.3389/fgene.2019.01051}{
+#' (a) \href{https://www.frontiersin.org/articles/10.3389/fgene.2019.01051/full}{
 #' Vsevolozhskaya, O.   A., Hu, F., &  Zaykin, D.  V. (2019).   _Detecting weak
 #' signals  by  combining  small  P-values  in  genetic  association  studies._
 #' Frontiers in genetics, 10, 1051.}
 #'
 #' (b) \href{https://onlinelibrary.wiley.com/doi/abs/10.1002/gepi.0042}{Zaykin,
 #' D.    V.,   Zhivotovsky,    L.     A.,   Westfall,    P.    H.,   &    Weir,
-#' B. S.  (2002). _Truncated  product method  for combining  P‐values._ Genetic
+#' B. S.  (2002). _Truncated  product method  for combining  P-values._ Genetic
 #' Epidemiology, 22(2), 170-185.}
 #'
 #' @seealso [dot()]
