@@ -27,8 +27,8 @@
 #' reference (\strong{b}) details [dot_tpm()] method.
 #'
 #' @param Z vector of association test statistics (i.e., Z-scores).
-#' @param  C matrix of  correlation among the  test statistics, as  obtained by
-#'     [cst()].
+#' @param C adjusted correlation among genotype variants.
+#' @param D adjusted correlation among phenotypes.
 #' @param k combine `k` smallest (decorrelated) P-values.
 #'
 #' @param ... additional parameters
@@ -74,9 +74,9 @@ NULL
 #' print(result$Y)  # 37.2854
 #' print(result$P)  # 0.0003736988
 #' @export
-dot_chisq <- function(Z, C, w=NULL, abs=0, ...)
+dot_chisq <- function(Z, C, D=NULL, w=NULL, abs=0, ...)
 {
-    ret <- dot(Z, C, ...)        # decorrelate
+    ret <- dot(Z, C, D, ...)        # decorrelate
     X <- ret$X
     H <- ret$H
     L <- ret$L                   # effective number of eigenvalues

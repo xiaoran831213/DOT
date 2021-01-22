@@ -29,25 +29,27 @@ mra <- function(y, g, int=1, ...)
     ret
 }
 
-#' test of the sum of squares
-tsq <- function(Z, C, w=NULL, eps=NULL, ...)
-{
-    if(is.null(eps))
-        eps <- sqrt(.Machine$double.eps)
-    L <- length(Z)
-    
-    if(!is.null(w))
-    {
-        Z <- Z * w
-        C <- t(w * C) * w
-    }
 
-    Y <- sum(Z^2) # sum square
-    ## chi-square mixture
-    W <- eigen(C, TRUE, TRUE)$value
-    egv <- sum(W > eps)
-    P <- imhof(Y, W, delta=rep(0, L))$Qq
-    list(Z=Z, C=C, W=W, Y=Y, P=P, L=L)
+tsq <- function(Z, C, D=NULL, tol.egv=NULL, ...)
+{
+    tol.egv <- tol.egv %||%  sqrt(.Machine$double.eps)
+    D <- D %||% 1
+    dim(Z) <- NULL
+
+    C <- eigen(C, TRUE, TRUE)$values
+    D <- eigen(D, TRUE, TRUE)$values
+    
+    d <- kronecker(D, C)
+    dim(d) <- NULL
+
+    ## . <- d > max(d) * tol.egv
+    ## if(!all(.))
+    ##     d <- d[  .]
+    L <- length(d)              # effective number of eigen
+
+    ## P <- imhof(sum(Z^2), d, delta=rep(0, L))$Qq
+    P <- davies(sum(Z^2), lambda = d)$Qq
+    list(d=d, L=L, P=P)
 }
 
 #' False Discovery Rate
@@ -59,3 +61,21 @@ fdr <- function(P, ...) list(P=min(p.adjust(P, 'fdr')))
 #'
 #' @param P p-values
 bon <- function(P, ...) list(P=min(p.adjust(P, 'bon')))
+
+#' summerize statistical power
+#'
+#' @param rpt a simulation report in data frame
+pow <- function(rpt)
+{
+    rpt <- subset(rpt, se=-itr)
+    grp <- subset(rpt, se=-c(pvl, egv))
+    rpt <- by(rpt, grp, function(g)
+    {
+        cfg <- subset(g, se=-c(pvl, egv))[1, ]
+        pow <- with(g, mean(pvl <= 0.05))
+        egv <- with(g, mean(egv))
+        cbind(cfg, pow=pow, egv=egv, rep=nrow(g))
+    })
+    rpt <- do.call(rbind, rpt)
+    rpt
+}

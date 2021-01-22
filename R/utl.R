@@ -1,4 +1,8 @@
-`%||%` <- function(x, v) if(is.null(x)) v else x
+#' null or else operator
+`%||%` <- function(x, v) if(is.null(x) || length(x)==0) v else x
+
+#' concatenation operator
+`%c%` <- function(x, v) {x[[length(x) + 1]] <- v; x}
 
 #' Create data frame
 #'
@@ -6,6 +10,13 @@
 #' turn into factors.
 #' @noRd
 .d <- function(...) data.frame(..., stringsAsFactors=FALSE)
+
+#' Expand Grid
+#'
+#' A wrapper for R \code{expand.grid}
+#' @noRd
+.e <- function(...) expand.grid(..., stringsAsFactors = FALSE)
+
 
 #' Flood objects in a container to an environment
 #'
@@ -43,17 +54,32 @@ flood <- function(x, e=parent.frame())
 #' \code{get.arg}  is   not  recommended  for  functions   accepting  non-scalar
 #' arguments such as genotype matrix or vector of effects.
 #'
+#' @param skp arguments to skip.
+#'
 #' @return a data.frame of function arguments
 #' @noRd
-get.arg <- function()
+get.arg <- function(skp=NULL)
 {
+    ## default arguments
+    f <- formals(sys.function(sys.parent()))
+    f <- f[names(f) != "..."]
+
+    ## calling arguments
     a <- as.list(match.call(sys.function(1), sys.call(1), expand.dots=TRUE))
     a <- lapply(a[-1], function(.)
     {
-        switch(class(.), call=deparse(.), name=as.character(.), .)
+        switch(class(.), call=eval(.), name=as.character(.), .)
     })
 
-    ## drop NULL(s) and return
+    d <- setdiff(names(f), names(a))
+    a[d] <- f[d]
+    
+    ## drop NULL
     a <- a[!sapply(a, is.null)]
+
+    ## skip
+    a <- a[!names(a) %in% skp]
+
+    ## return
     do.call(data.frame, c(a, list(stringsAsFactors=FALSE)))
 }

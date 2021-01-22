@@ -1,17 +1,25 @@
 library(CompQuadForm)
-library(SKAT)
+## library(SKAT)
 library(MASS)
-library(Matrix)
-library(mvtnorm)
+## library(Matrix)
+## library(mvtnorm)
 
-source("sim.R")
-source("gen.R")
-source("mtd.R")
-source("imp.R")
-source("err.R")
-source("cor.R")
+if(!exists("c17"))
+{
+    c17 <- readRDS('17q12.rds')
+    n17 <- nrow(c17)
+    m17 <- ncol(c17)
+    f17 <- colMeans(c17) / 2
+}
 
 for(. in dir("R", "[.]R$", ful=TRUE))
 {
+    source(.)
+}
+
+for(. in dir(".", "[.]R$"))
+{
+    if(. == "ini.R")
+        next
     source(.)
 }

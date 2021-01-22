@@ -72,29 +72,52 @@ scp <- function(X, C)
 #' \item{\code{L}: }{the effective number of positve eigenvalues}
 #' }
 #' @noRd
-nsp <- function(X, L=NULL, eps=NULL, ...)
+nsp <- function(C, D=NULL, tol.egv=NULL, ...)
 {
-    if(is.null(eps))
-        eps <- sqrt(.Machine$double.eps)
+    tol.egv <- tol.egv %||%  sqrt(.Machine$double.eps)
+    D <- D %||% 1
 
-    ## eigen decomposition
-    . <- eigen(X, TRUE)
-    u <- .$vectors
-    d <- .$values
-
-    ## positive eigen values
-    . <- d > d[1] * eps
-    if(!all(.))
-    {
-        d <- d[  .]
-        u <- u[, .]
-    }
+    C <- eigen(C, TRUE)
+    D <- eigen(D, TRUE)
+    
+    d1 <- D$values
+    d2 <- C$values
+    i1 <- d1 > d1[1] * tol.egv
+    i2 <- d2 > d2[1] * tol.egv
+    d1 <- d1[i1]
+    d2 <- d2[i2]
+    u1 <- D$vectors[, i1]
+    u2 <- C$vectors[, i2]
+    d <- kronecker(d1, d2)
+    u <- kronecker(u1, u2)
+    
+    ## d <- kronecker(D$values, C$values)
+    ## u <- kronecker(D$vectors, C$vectors)
+    
+    ## ## positive eigen values
+    ## . <- d > max(d) * tol.egv
+    ## if(!all(.))
+    ## {
+    ##     d <- d[  .]
+    ##     u <- u[, .]
+    ## }
     L <- length(d)              # effective number of eigen
     
     ## square root
+    dim(d) <- NULL
     d <- sqrt(1/d)
     H <- u %*% (d * t(u))       # U diag(d) U'
     H <- 0.5 * (H + t(H))
     
     list(H=H, L=L)
+}
+
+
+#' Short for scale()
+std <- function(x, c=TRUE, s=TRUE, ...)
+{
+    r <- scale(x, center=c, scale=s)
+    attr(r, 'scaled:center') <- NULL
+    attr(r, 'scaled:scale') <- NULL
+    r
 }

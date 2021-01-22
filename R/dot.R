@@ -40,8 +40,8 @@
 #' Biology, 16(4), e1007819.}
 #'
 #' @param Z vector of association test statistics (i.e., Z-scores).
-#' @param C correlation matrix among the association test statistics, as
-#'     obtained by [cst()].
+#' @param C correlation matrix among the genotype variants, as obtained by [cst()].
+#' @param D correlation matrix among the phenotypes, as obtained by [cst()], can be left NULL if only 1 phenotype involves.
 #' @param tol.cor tolerance threshold for the largest correlation absolute value.
 #' @param tol.egv tolerance threshold for the smallest eigenvalue.
 #' @param ... additional parameters.
@@ -83,26 +83,25 @@
 #' print(ssq)            # sum of squares = 35.76306
 #' print(pvl)            # chisq P-value =  0.001132132
 #' @export
-dot <- function(Z, C, tol.cor=NULL, tol.egv=NULL, ...)
+dot <- function(Z, C, D=NULL, tol.cor=NULL, tol.egv=NULL, ...)
 {
     if(is.null(tol.cor))
         tol.cor <- sqrt(.Machine$double.eps)
     if(is.null(tol.egv))
         tol.egv <- sqrt(.Machine$double.eps)
-
+    
     ## trim collinear variants
     m <- dvt(C, tol.cor)
-    M <- sum(m)                      # effective number of variants
     C <- C[m, m]
-    Z <- Z[m]
+    M <- sum(m)
     
-    ## get orthogonal transformation
-    d <- nsp(C, eps=tol.egv, ...)
-    H <- d$H                         # orthogonal transformation
-    L <- d$L                         # effective number of eigenvalues
-    X <- drop(H %*% Z)               # decorrelated statistics
-    
-    list(Z=Z, H=H, X=X, L=L, M=M)
+    ret <- nsp(C, D, tol.egv=tol.egv, ...)
+    H <- ret$H           # orthogonal transformation
+    L <- ret$L           # effective number of components
+    X <- H %*% c(Z[m, ]) # decorrelated
+
+    P <- 1 - pchisq(sum(X^2), L)
+    c(list(Z=Z, X=X, P=P, M=M), ret)
 }
 
 #' Calculate Z-scores from P-values and estimated effects
