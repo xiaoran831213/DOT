@@ -57,8 +57,7 @@ get.pow <- function(sim, cache=TRUE)
     else
     {
         rpt <- get.rpt(sim)
-        rpt <- subset(rpt, se=-seed)
-        grp <- subset(rpt, se=c(key, tag, N, M, mtd))
+        grp <- subset(rpt, se=c(key, tag, N, M, L, mtd))
         pow <- by(rpt, grp, function(g)
         {
             cfg <- subset(g, se=-c(pow, egv, rep))[1, ]
@@ -79,7 +78,7 @@ plt.pow <- function(sim, out=paste0(sim, '.pdf'))
     
     ## rpt <- subset(rpt, mtd %in% c("tsq", "dot_ch2", "skt", "mra", "bon"))
     ## g <- ggplot(rpt, aes(x=N, y=pow))
-    g <- ggplot(rpt, aes(x=M, y=pow))
+    g <- ggplot(rpt, aes(x=L, y=pow))
     g <- g + geom_line(aes(color=mtd), alpha=.5, size=1)
     g <- g + facet_grid(key ~ tag)
     g <- g + .th
